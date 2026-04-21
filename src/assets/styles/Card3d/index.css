@@ -1,0 +1,126 @@
+.maincontainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    perspective: 1000px;
+  }
+  
+  .thecard {
+    position: relative;
+    width: 100%;
+    max-width: 300px; /* Limita el ancho máximo */
+    height: 400px;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease;
+    cursor: pointer;
+    margin-bottom: 20px; /* Espacio entre tarjetas */
+  }
+  
+  .thecard:hover {
+    transform: rotateY(180deg);
+  }
+  
+  .thefront,
+  .theback {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    top: 0;
+    left: 0;
+    transition: transform 0.5s ease;
+  }
+  
+  .thefront {
+    z-index: 2;
+  }
+  
+  .theback {
+    transform: rotateY(180deg);
+    z-index: 1;
+    overflow: hidden;
+    box-shadow: 5px 5px 15px #114232;
+  }
+  
+  .thefront img,
+  .theback img {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    display: block;
+    transition: transform 0.3s;
+  }
+  
+  .overlay {
+    height: 0;
+    width: 100%;
+    background: linear-gradient(transparent, #151515d1 58%);
+    border-radius: 10px;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 4px;
+    text-align: center;
+    font-size: 14px;
+    transition: height 0.3s;
+  }
+  
+  .overlay h3 {
+    font-weight: 500;
+    margin-bottom: 5px;
+    margin-top: 80%;
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  
+  .overlay a {
+    margin-top: 10px;
+    color: #262626;
+    text-decoration: none;
+    font-size: 13px;
+    background-color: #fff;
+    border-radius: 50px;
+    text-align: center;
+    padding: 5px 15px;
+    transition: background-color 0.3s;
+  }
+  
+  .theback:hover img {
+    transform: scale(1.2);
+  }
+  
+  .theback:hover .overlay {
+    height: 100%;
+  }
+  
+  @media (max-width: 768px) {
+    .thecard {
+      width: 90%; /* Ocupa la mayoría del ancho disponible en pantallas pequeñas */
+      height: 300px; /* Ajuste de altura para pantallas más pequeñas */
+    }
+    
+    .overlay h3 {
+      font-size: 18px; /* Tamaño de fuente más pequeño para pantallas pequeñas */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .thecard {
+      height: 250px; /* Altura más baja para pantallas muy pequeñas */
+    }
+    
+    .overlay h3 {
+      font-size: 16px; /* Tamaño de fuente más pequeño para pantallas muy pequeñas */
+    }
+  }
+  
