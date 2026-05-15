@@ -182,7 +182,18 @@ const TournamentsForm = () => {
 
     if (validateForm()) {
       try {
-        const formattedBirthDate = formatDate(form.birthDate);
+        // 🔥 Formato para los correos de EmailJS (DD/MM/YYYY)
+        const formattedBirthDateForEmail = formatDate(form.birthDate);
+        
+        // 🔥 Formato para el backend de Django (YYYY-MM-DD)
+        let backendDate = form.birthDate;
+        if (backendDate.includes('/')) {
+          const parts = backendDate.split('/');
+          if (parts.length === 3) {
+            backendDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+        }
+
         let photoUrl = "";
 
         if (form.photo) {
@@ -196,15 +207,17 @@ const TournamentsForm = () => {
           photoUrl = cloudinaryResponse.data.secure_url;
         }
 
+        // Enviamos la fecha procesada a la API
         const apiData = {
-          ...form, birthDate: formattedBirthDate, photoUrl, event: EVENT_NAME,
+          ...form, birthDate: backendDate, photoUrl, event: EVENT_NAME,
         };
 
         await createTask(apiData);
 
         const templateParams = {
           form_name: form.fullName, to_name: form.fullName, to_email: form.email,
-          to_birthDate: formattedBirthDate, to_dni: form.dni, to_locality: form.locality,
+          to_birthDate: formattedBirthDateForEmail, // <-- Aquí va la versión DD/MM/YYYY
+          to_dni: form.dni, to_locality: form.locality,
           to_country: form.country, to_province: form.province, to_modality: form.modality,
           to_category: form.category, to_competitionWeight: form.competitionWeight,
           to_height: form.height, to_phone: form.phone, to_trainer: form.trainer,
@@ -222,7 +235,7 @@ const TournamentsForm = () => {
           phone: "", instagram: "", trainer: "", photo: "",
         });
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error al enviar formulario:", error.response?.data || error.message);
       } finally {
         setLoading(false); // 🔥 APAGA EL MODAL DE CARGA
       }
