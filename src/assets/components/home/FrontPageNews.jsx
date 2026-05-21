@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import portadaImg from "../../imgs/noticia_afiba.jpg";
-
 import foto1 from "../../imgs/frontpagenews/maria1.webp";
 import foto2 from "../../imgs/frontpagenews/maria2.webp";
 import foto3 from "../../imgs/frontpagenews/maria3.webp";
@@ -113,121 +111,6 @@ const FrontPageNews = () => {
           <h2 className="text-2xl sm:text-3xl md:text-4xl uppercase font-bold text-slate-100 mb-6 sm:mb-8 text-center md:text-left">
             📰 Noticias Destacadas
           </h2>
-
-          {/* ✅ DESTACADO (Convocatoria) */}
-          <motion.div
-            className="relative rounded-3xl border border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-slate-900/70 to-slate-900/40 overflow-hidden shadow-2xl shadow-black/40 p-5 sm:p-7 md:p-8 mb-8 sm:mb-10"
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55 }}
-            viewport={{ once: true }}
-          >
-            {/* Glow */}
-            <div className="pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full bg-amber-400/15 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-amber-300/10 blur-3xl" />
-
-            <div className="flex items-start justify-between gap-5 flex-col md:flex-row">
-              <div className="w-full">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border border-amber-400/40 bg-amber-500/10 text-amber-200">
-                    ⭐ Destacado
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border border-slate-700 bg-slate-950/50 text-slate-200">
-                    AFIBA
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full border border-slate-700 bg-slate-950/50 text-slate-200">
-                    Documento
-                  </span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-extrabold mb-2 text-slate-100 tracking-tight">
-                  Convocatoria – Asamblea General Ordinaria 2026
-                </h3>
-
-                <p className="text-base sm:text-lg text-slate-200/90 leading-relaxed">
-                  Descargá el documento oficial de convocatoria.
-                </p>
-
-                {/* Info extra */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
-                    <div className="text-slate-200 font-semibold">📅 Fecha</div>
-                    <div className="text-slate-300">14 de marzo de 2026</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
-                    <div className="text-slate-200 font-semibold">🕒 Horario</div>
-                    <div className="text-slate-300">20:00 hs</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4 sm:col-span-2">
-                    <div className="text-slate-200 font-semibold">📍 Lugar</div>
-                    <div className="text-slate-300">(Completá acá la dirección / sede)</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4 sm:col-span-2">
-                    <div className="text-slate-200 font-semibold">📌 Temas principales</div>
-                    <ul className="mt-2 space-y-1 text-slate-300 text-sm sm:text-base list-disc pl-5">
-                      <li>Lectura y aprobación del acta anterior</li>
-                      <li>Memoria y balance</li>
-                      <li>Elección / designaciones (si aplica)</li>
-                      <li>Varios</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Botones grandes + animados */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <motion.a
-                    href="/convocatoria_2026.docx"
-                    download="Convocatoria_Ordinaria_AFIBA_2026.docx"
-                    className="inline-flex items-center justify-center rounded-2xl px-6 py-4 text-base sm:text-lg font-extrabold
-                               bg-amber-300 text-slate-950 hover:bg-amber-200 transition shadow-lg shadow-amber-500/10"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    animate={{ y: [0, -2, 0] }}
-                    transition={{
-                      duration: 1.6,
-                      repeat: Infinity,
-                      repeatType: "mirror",
-                    }}
-                  >
-                    ⬇️ Descargar Convocatoria (Word)
-                  </motion.a>
-
-                  <motion.a
-                    href="/convocatoria_2026.docx"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-2xl px-6 py-4 text-base sm:text-lg font-bold
-                               border border-amber-400/40 text-amber-100 hover:bg-amber-500/10 transition"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    👀 Abrir documento
-                  </motion.a>
-                </div>
-              </div>
-
-              {/* Mini imagen opcional (portada) */}
-              <div className="w-full md:w-[320px]">
-                <motion.div
-                  className="rounded-3xl border border-slate-800 bg-slate-950/30 p-3 shadow-xl shadow-black/30"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
-                >
-                  <img
-                    src={portadaImg}
-                    alt="AFIBA"
-                    className="w-full h-auto rounded-2xl border border-slate-800"
-                    loading="lazy"
-                  />
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
 
           {/* Noticias */}
           <div className="space-y-8 sm:space-y-10">
