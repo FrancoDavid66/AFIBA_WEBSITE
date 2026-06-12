@@ -12,7 +12,7 @@ import foto6 from "../../imgs/frontpagenews/maria6.webp";
 import cursoCapacitacionAtletas from "../../imgs/frontpagenews/curso_capacitacion.jpeg";
 import cursoCapacitacionEntrenadores from "../../imgs/frontpagenews/curso_capacitacion_2.jpeg";
 
-import floridaSummer from "../../imgs/frontpagenews/florida_summer.jpeg";
+import buenosAiresIfbb from "../../imgs/frontpagenews/buenos aires_ifbb.jpeg";
 
 const FrontPageNews = () => {
   const [openImage, setOpenImage] = useState(null);
@@ -21,6 +21,26 @@ const FrontPageNews = () => {
 
   const news = useMemo(
     () => [
+      {
+        id: 5,
+        badge: "Competencia",
+        title: "Buenos Aires IFBB 2025 – San Justo",
+        description:
+          "Competencia oficial Buenos Aires IFBB, organizada por FAMF, IFBB y AFIBA. Se realiza el 23 de agosto en el Centro Deportivo Huracán de San Justo. Atención atletas: todos los ganadores de Provincia de Buenos Aires tendrán inscripción paga para el Campeonato Nacional y el Equipo Oficial AFIBA.",
+        meta: [
+          "📅 23 de agosto",
+          "🕙 Inscripción: 10:00 a 12:00 hs",
+          "🏆 Competencia: 15:00 hs",
+          "📍 Centro Deportivo Huracán de San Justo – Ignacio Arieta 2967, San Justo (Provincia de Buenos Aires)",
+          "🤝 Organizan: FAMF · IFBB · AFIBA",
+          "⚠️ Atención atletas: todos los ganadores de Provincia de Buenos Aires tendrán inscripción paga para el Campeonato Nacional y el Equipo Oficial AFIBA",
+        ],
+        image: {
+          src: buenosAiresIfbb,
+          alt: "Afiche Buenos Aires IFBB - 23 de agosto - Centro Deportivo Huracán de San Justo",
+        },
+      },
+
       {
         id: 1,
         badge: "Capacitación",
@@ -63,25 +83,6 @@ const FrontPageNews = () => {
         image: {
           src: cursoCapacitacionEntrenadores,
           alt: "Curso de Capacitación 2026 - Normativa y Juzgamiento IFBB - Para entrenadores",
-        },
-      },
-
-      {
-        id: 3,
-        badge: "Competencia",
-        title: "Florida Summer Cup: IFBB Fitness Challenge (Rosario)",
-        description:
-          "Competencia Florida Summer Cup – IFBB Fitness Challenge. El evento se realiza el 14 de marzo en el Balneario La Florida (Av. Carrasco 2035, Rosario). Categorías: Bronce (M/F), Silver (M/F), Parejas Mixtas y Childrens. Registro 15:00 hs e inicio de competencia 16:00 hs.",
-        meta: [
-          "📅 14 de marzo",
-          "📍 Balneario La Florida – Av. Carrasco 2035, Rosario",
-          "🕒 Registro 15:00 / Inicio 16:00",
-          "🏅 Categorías: Bronce, Silver, Parejas Mixtas, Childrens",
-          "📲 Info: Miguel Luna (+54 9 11 5806-1674) / IG: @ASFF_2024",
-        ],
-        image: {
-          src: floridaSummer,
-          alt: "Afiche Florida Summer Cup - IFBB Fitness Challenge",
         },
       },
 
