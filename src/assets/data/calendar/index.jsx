@@ -24,7 +24,7 @@ export const CALENDAR_AFIBA = {
       organizer: "AFIBA - Prom. Andres Zanzberro (2494638743)",
       link: "https://www.instagram.com/afibaoficial/",
       image: null, // Flyer no disponible -> Señal para diseño front-end
-      available: true // INSCRIPCIÓN HABILITADA (Próximo torneo)
+      available: true // Finalizado (se gestiona por fecha)
     }
   ],
   AGOSTO: [
@@ -36,7 +36,7 @@ export const CALENDAR_AFIBA = {
       organizer: "AFIBA - Prom. Seba Barrientos (549 2325479243)",
       link: "https://www.instagram.com/afibaoficial/",
       image: null, // Flyer no disponible
-      available: false
+      available: true // INSCRIPCIÓN HABILITADA (Próximo torneo)
     }
   ],
   OCTUBRE: [

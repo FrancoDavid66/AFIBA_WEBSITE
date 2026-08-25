@@ -5,9 +5,8 @@ import LoadingScreen from "./assets/components/LoadingScreen";
 import Results from "./assets/components/Results";
 import Rules from "./assets/pages/rules";
 import SponsorVideos from "./assets/components/SponsorVideos";
-
-// Noticia importante
-
+import InscriptionFAB from "./assets/components/InscriptionFAB";
+import InAppBrowserNotice from "./assets/components/InAppBrowserNotice";
 
 // Importa componentes de forma diferida
 const NavigationButtons = lazy(() =>
@@ -29,9 +28,7 @@ const ModalitiesView = lazy(() =>
   import("./assets/components/views/home/ModalitiesView")
 );
 
-
 import ScrollToTop from "./assets/utils/ScrollToTop";
-
 
 // Definición de variantes y transición
 const pageVariants = {
@@ -62,7 +59,7 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageWrapper component={<Home />} />} />
         <Route path="/About" element={<PageWrapper component={<About />} />} />
-        
+
         <Route
           path="/Calendar"
           element={<PageWrapper component={<Calendar />} />}
@@ -127,11 +124,16 @@ function App() {
       <div className="App">
         <HashRouter>
           <ScrollToTop>
-         
             <Header />
             <AnimatedRoutes />
             <SponsorVideos />
             <Footer />
+
+            {/* Botón flotante de inscripción */}
+            <InscriptionFAB />
+
+            {/* Aviso para abrir en navegador rea l si se entra desde Instagram/etc. */}
+            <InAppBrowserNotice />
           </ScrollToTop>
         </HashRouter>
       </div>

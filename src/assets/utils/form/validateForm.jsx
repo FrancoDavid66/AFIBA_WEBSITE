@@ -1,66 +1,54 @@
-// src/utils/formValidation.js
-export const validateForm = (form) => {
-    let tempErrors = {};
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const dniPattern = /^[0-9]+$/; // Acepta cualquier cantidad de números
-    const phonePattern = /^\+?[\d\s]+$/;
-    const weightPattern = /^[0-9]+\.[0-9]+$/; // Acepta solo números con punto (ej. 80.6)
-    const heightPattern = /^[0-9]+\.[0-9]+$/; // Acepta solo números con punto (ej. 1.80)
+// src/assets/utils/form/validateForm.jsx
+// Fuente única de validación del formulario de preinscripción.
 
-    if (!form.email) {
-        tempErrors.email = "Correo Electrónico es requerido";
-    } else if (!emailPattern.test(form.email)) {
-        tempErrors.email = "Correo Electrónico no es válido";
-    }
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const dniPattern = /^[0-9]+$/;
+const phonePattern = /^\+?[\d\s().-]{6,}$/;
+const numberPattern = /^\d+([.,]\d+)?$/;
 
-    if (!form.fullName) tempErrors.fullName = "Nombre y Apellido es requerido";
-
-    if (!form.birthDate) {
-        tempErrors.birthDate = "Fecha de Nacimiento es requerida";
-    } else {
-        const birthDate = new Date(form.birthDate);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-        if (age < 0 || age > 100) {
-            tempErrors.birthDate = "Debes tener entre 18 y 100 años";
-        }
-    }
-
-    if (!form.dni) {
-        tempErrors.dni = "DNI es requerido";
-    } else if (!dniPattern.test(form.dni)) {
-        tempErrors.dni = "DNI debe tener exactamente 9 dígitos";
-    }
-
-    if (!form.locality) tempErrors.locality = "Localidad es requerida";
-
-    if (!form.modality) tempErrors.modality = "Modalidad es requerida";
-
-    if (!form.category) tempErrors.category = "Categoría es requerida";
-
-    if (!form.competitionWeight) {
-        tempErrors.competitionWeight = "Peso de Competencia es requerido";
-    } else if (!weightPattern.test(form.competitionWeight)) {
-        tempErrors.competitionWeight = "Peso de Competencia debe ser un número con punto (por ejemplo, 80.6)";
-    }
-
-    if (!form.height) {
-        tempErrors.height = "Altura es requerida";
-    } else if (!heightPattern.test(form.height)) {
-        tempErrors.height = "Altura debe ser un número con punto (por ejemplo, 1.80)";
-    }
-
-    if (!form.phone) {
-        tempErrors.phone = "Teléfono es requerido";
-    } else if (!phonePattern.test(form.phone)) {
-        tempErrors.phone = "Teléfono no es válido";
-    }
-
-    if (!form.trainer) tempErrors.trainer = "Entrenador es requerido";
-
-    if (!form.photo) {
-        tempErrors.photo = "Foto carnet es requerida";
-    }
-
-    return tempErrors;
+const fechaInvalida = (value) => {
+  if (!value) return true;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return true;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  if (d > hoy) return true;
+  if (d.getFullYear() < 1900) return true;
+  return false;
 };
+
+export const fieldValidators = {
+  email: (f) => !f.email ? "Ingresá tu correo." : (!emailPattern.test(f.email) ? "Revisá el correo, no parece válido." : null),
+  fullName: (f) => !f.fullName?.trim() ? "Ingresá tu nombre y apellido." : null,
+  birthDate: (f) => !f.birthDate ? "Elegí tu fecha de nacimiento." : (fechaInvalida(f.birthDate) ? "Revisá la fecha de nacimiento." : null),
+  dni: (f) => !f.dni ? "Ingresá tu DNI." : (!dniPattern.test(f.dni) ? "El DNI lleva solo números, sin puntos." : null),
+  country: (f) => !f.country ? "Elegí tu país." : null,
+  province: (f) => (f.country === "ARGENTINA" && !f.province) ? "Elegí tu provincia." : null,
+  locality: (f) => !f.locality?.trim() ? "Ingresá tu localidad." : null,
+
+  // Múltiples participaciones (modalidad + categoría)
+  participations: (f) => (!f.participations || f.participations.length === 0)
+    ? "Agregá al menos una modalidad con su categoría."
+    : null,
+
+  competitionWeight: (f) => !f.competitionWeight ? "Ingresá tu peso." : (!numberPattern.test(f.competitionWeight) ? "Poné un número, por ejemplo 80 o 80.5." : null),
+  height: (f) => !f.height ? "Ingresá tu altura." : (!numberPattern.test(f.height) ? "Poné tu altura en metros, por ejemplo 1.80." : null),
+  phone: (f) => !f.phone ? "Ingresá tu teléfono." : (!phonePattern.test(f.phone) ? "Revisá el teléfono." : null),
+  trainer: (f) => !f.trainer?.trim() ? "Ingresá el nombre de tu entrenador." : null,
+  // instagram es opcional.
+};
+
+export const ALL_FIELDS = Object.keys(fieldValidators);
+
+export const validateFields = (form, fields) => {
+  const errors = {};
+  fields.forEach((name) => {
+    const v = fieldValidators[name];
+    if (!v) return;
+    const msg = v(form);
+    if (msg) errors[name] = msg;
+  });
+  return errors;
+};
+
+export const validateForm = (form) => validateFields(form, ALL_FIELDS);

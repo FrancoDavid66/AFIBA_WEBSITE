@@ -1,73 +1,50 @@
-import React, { useRef, useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+// src/assets/pages/RegistrationForm/index.jsx
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import emailjs from "@emailjs/browser";
-import axios from "axios";
-import {
-  LOCALITIES,
-  MODALITIES,
-  CATEGORIES,
-  PROVINCES,
-  SOUTH_AMERICAN_COUNTRIES,
-} from "../../data/form";
 import { Link, useLocation } from "react-router-dom";
+import { LOCALITIES, MODALITIES, CATEGORIES, PROVINCES, SOUTH_AMERICAN_COUNTRIES } from "../../data/form";
 import { createTask } from "../../../api/tasks.api.js";
+import { validateForm } from "../../utils/form/validateForm";
 import Form from "../../components/form/Form.jsx";
-import { FaCheckCircle, FaLock, FaExclamationTriangle, FaArrowLeft, FaTrophy, FaDumbbell } from "react-icons/fa";
+import { FaCheckCircle, FaLock, FaExclamationTriangle, FaArrowLeft, FaArrowRight, FaBolt } from "react-icons/fa";
+import afibaLogo from "../../imgs/logo.png";
 
 const TournamentsForm = () => {
-  const TEMPLATE_ID = "template_ylbg0bb";
-  const SERVICE_ID = "service_df596ny";
-  const PUBLIC_KEY = "xsntWGn3yCXlG9Exn";
+  const TEMPLATE_ID = "template_2b1petm";
+  const SERVICE_ID = "service_soiecur";
+  const PUBLIC_KEY = "i_NVru_5O1nhFJ0re";
+  const TEMPLATE_ID_CONFIRMATION = "template_vunrnaa";
+  const SERVICE_ID_CONFIRMATION = "service_soiecur";
+  const PUBLIC_KEY_CONFIRMATION = "i_NVru_5O1nhFJ0re";
 
-  const TEMPLATE_ID_CONFIRMATION = "template_1fqy5mx";
-  const SERVICE_ID_CONFIRMATION = "service_df596ny";
-  const PUBLIC_KEY_CONFIRMATION = "xsntWGn3yCXlG9Exn";
-
-  const CLOUD_NAME = "dvsyvhqym";
-  const UPLOAD_PRESET = "PresetForm";
-
+  const reduce = useReducedMotion();
   const location = useLocation();
 
-  const DEFAULT_TOURNAMENT = useMemo(
-    () => ({
-      name: "OPEN IFBB TANDIL",
-      date: "2026-05-10",
-    }),
-    []
-  );
+  const DEFAULT_TOURNAMENT = useMemo(() => ({ name: "OPEN IFBB TANDIL", date: "2026-05-10" }), []);
 
   const queryTournament = useMemo(() => {
     const params = new URLSearchParams(location.search || "");
     const name = params.get("tournament") || params.get("event") || params.get("name");
     const date = params.get("date");
     if (!name && !date) return null;
-    return {
-      name: name || DEFAULT_TOURNAMENT.name,
-      date: date || DEFAULT_TOURNAMENT.date,
-    };
+    return { name: name || DEFAULT_TOURNAMENT.name, date: date || DEFAULT_TOURNAMENT.date };
   }, [location.search, DEFAULT_TOURNAMENT]);
 
   const tournamentFromState = location.state?.tournament;
   const resolvedDate = tournamentFromState?.fullDate || tournamentFromState?.date || queryTournament?.date || DEFAULT_TOURNAMENT.date;
-
   const tournament = {
     ...tournamentFromState,
     name: tournamentFromState?.name || queryTournament?.name || DEFAULT_TOURNAMENT.name,
-    date: resolvedDate
+    date: resolvedDate,
   };
 
   const EVENT_NAME = tournament.name;
-  const eventNameLower = EVENT_NAME.toLowerCase();
-  const forceBlocked = eventNameLower.includes("copa provincia");
+  const forceBlocked = EVENT_NAME.toLowerCase().includes("copa provincia");
 
-  // Cierre: 1 día antes a las 00:00 hs
   const CLOSE_AT = useMemo(() => {
-    const rawDate = tournament.date;
-    const d = new Date(`${rawDate}T00:00:00`);
-    if (!Number.isNaN(d.getTime())) {
-      d.setDate(d.getDate() - 1);
-      return d;
-    }
+    const d = new Date(`${tournament.date}T00:00:00`);
+    if (!Number.isNaN(d.getTime())) { d.setDate(d.getDate() - 1); return d; }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30, 0, 0, 0);
   }, [tournament.date]);
@@ -76,422 +53,228 @@ const TournamentsForm = () => {
   const [inscriptionClosed, setInscriptionClosed] = useState(false);
 
   const pad2 = (n) => String(n).padStart(2, "0");
-  const formatCloseAt = (dateObj) => {
-    const dd = pad2(dateObj.getDate());
-    const mm = pad2(dateObj.getMonth() + 1);
-    const yyyy = dateObj.getFullYear();
-    return `${dd}/${mm}/${yyyy}`;
-  };
+  const formatCloseAt = (d) => `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
 
   useEffect(() => {
     const tick = () => {
       const diff = CLOSE_AT.getTime() - Date.now();
-
-      if (diff <= 0) {
-        setInscriptionClosed(true);
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-
+      if (diff <= 0) { setInscriptionClosed(true); setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 }); return; }
       setInscriptionClosed(false);
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-      setTimeLeft({ days, hours, minutes, seconds });
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff / 3600000) % 24),
+        minutes: Math.floor((diff / 60000) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
     };
-
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [CLOSE_AT]);
 
+  const [started, setStarted] = useState(false);
   const [form, setForm] = useState({
-    email: "", fullName: "", birthDate: "", dni: "", locality: "",
-    country: "", province: "", modality: "", category: "",
-    competitionWeight: "", height: "", phone: "", trainer: "",
-    instagram: "", photo: "",
+    email: "", fullName: "", birthDate: "", dni: "", locality: "", country: "", province: "",
+    participations: [], competitionWeight: "", height: "", phone: "", trainer: "", instagram: "",
   });
-
   const [errors, setErrors] = useState({});
-  
-  // 🔥 ESTADOS DE MODALES
-  const [loading, setLoading] = useState(false); // Modal de Carga
-  const [modalOpen, setModalOpen] = useState(false); // Modal de Éxito
-  
-  const fileInputRef = useRef();
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const LOADING_MESSAGES = ["Registrando tu inscripción...", "Confirmando tu lugar...", "Casi listo..."];
+  const [loadingMsg, setLoadingMsg] = useState(0);
+  useEffect(() => {
+    if (!loading) { setLoadingMsg(0); return; }
+    const id = setInterval(() => setLoadingMsg((i) => (i + 1) % LOADING_MESSAGES.length), 1600);
+    return () => clearInterval(id);
+  }, [loading]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    const formattedValue = value.replace(",", ".");
-    if (name === "photo") {
-      const file = files?.[0];
-      if (file && (file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/jpg")) {
-        setForm({ ...form, [name]: file });
-      } else {
-        alert("Seleccioná una imagen PNG, JPG o JPEG.");
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    } else {
-      setForm({ ...form, [name]: formattedValue });
-    }
+    const { name, value } = e.target;
+    const v = name === "competitionWeight" || name === "height" ? value.replace(",", ".") : value;
+    setForm((prev) => ({ ...prev, [name]: v }));
   };
 
-  const validateForm = () => {
-    let tempErrors = {};
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const dniPattern = /^[0-9]+$/;
-    const phonePattern = /^\+?[\d\s]+$/;
-    const weightPattern = /^[0-9]+\.[0-9]+$/;
-    const heightPattern = /^[0-9]+\.[0-9]+$/;
-
-    if (!form.email) tempErrors.email = "Requerido";
-    else if (!emailPattern.test(form.email)) tempErrors.email = "Correo no válido";
-    if (!form.fullName) tempErrors.fullName = "Requerido";
-    if (!form.birthDate) tempErrors.birthDate = "Requerida";
-    if (!form.dni) tempErrors.dni = "Requerido";
-    else if (!dniPattern.test(form.dni)) tempErrors.dni = "Solo números";
-    if (!form.locality) tempErrors.locality = "Requerida";
-    if (!form.country) tempErrors.country = "Requerido";
-    if (!form.province) tempErrors.province = "Requerida";
-    if (!form.modality) tempErrors.modality = "Requerida";
-    if (!form.category) tempErrors.category = "Requerida";
-    if (!form.competitionWeight) tempErrors.competitionWeight = "Requerido";
-    if (!form.height) tempErrors.height = "Requerida";
-    if (!form.phone) tempErrors.phone = "Requerido";
-    if (!form.trainer) tempErrors.trainer = "Requerido";
-    if (!form.photo) tempErrors.photo = "Foto requerida";
-
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
-  };
+  const formatDate = (s) => { const d = new Date(s); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`; };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // 🔥 ACTIVA EL MODAL DE CARGA
+    setLoading(true);
+    if (inscriptionClosed || forceBlocked || Date.now() >= CLOSE_AT.getTime()) { setLoading(false); return; }
 
-    if (inscriptionClosed || forceBlocked || Date.now() >= CLOSE_AT.getTime()) {
-      setLoading(false);
-      return;
-    }
+    const tempErrors = validateForm(form);
+    setErrors(tempErrors);
+    if (Object.keys(tempErrors).length > 0) { setLoading(false); return; }
 
-    if (validateForm()) {
+    try {
+      const formattedBirthDateForEmail = formatDate(form.birthDate);
+      let backendDate = form.birthDate;
+      if (backendDate.includes("/")) { const p = backendDate.split("/"); if (p.length === 3) backendDate = `${p[2]}-${p[1]}-${p[0]}`; }
+
+      // El backend recibe el array de participaciones y crea una fila por cada combo.
+      const apiData = { ...form, birthDate: backendDate, event: EVENT_NAME };
+      await createTask(apiData);
+
+      const parts = form.participations || [];
+      const participationsText = parts.map((p) => `${p.modality} - ${p.category}`).join(" | ");
+
+      const templateParams = {
+        form_name: form.fullName, to_name: form.fullName, to_email: form.email,
+        to_birthDate: formattedBirthDateForEmail, to_dni: form.dni, to_locality: form.locality,
+        to_country: form.country, to_province: form.province,
+        to_modality: parts.map((p) => p.modality).join(", "),
+        to_category: parts.map((p) => p.category).join(", "),
+        to_participations: participationsText,
+        to_competitionWeight: form.competitionWeight, to_height: form.height,
+        to_phone: form.phone, to_trainer: form.trainer, to_instagram: form.instagram,
+        message: "REGISTRO OFICIAL AFIBA", tournament_name: EVENT_NAME, to_event: EVENT_NAME,
+      };
+      // El mail NO es crítico: la inscripción ya quedó guardada en la base.
       try {
-        // 🔥 Formato para los correos de EmailJS (DD/MM/YYYY)
-        const formattedBirthDateForEmail = formatDate(form.birthDate);
-        
-        // 🔥 Formato para el backend de Django (YYYY-MM-DD)
-        let backendDate = form.birthDate;
-        if (backendDate.includes('/')) {
-          const parts = backendDate.split('/');
-          if (parts.length === 3) {
-            backendDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-          }
-        }
-
-        let photoUrl = "";
-
-        if (form.photo) {
-          const formData = new FormData();
-          formData.append("file", form.photo);
-          formData.append("upload_preset", UPLOAD_PRESET);
-          const cloudinaryResponse = await axios.post(
-            `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-            formData
-          );
-          photoUrl = cloudinaryResponse.data.secure_url;
-        }
-
-        // Enviamos la fecha procesada a la API
-        const apiData = {
-          ...form, birthDate: backendDate, photoUrl, event: EVENT_NAME,
-        };
-
-        await createTask(apiData);
-
-        const templateParams = {
-          form_name: form.fullName, to_name: form.fullName, to_email: form.email,
-          to_birthDate: formattedBirthDateForEmail, // <-- Aquí va la versión DD/MM/YYYY
-          to_dni: form.dni, to_locality: form.locality,
-          to_country: form.country, to_province: form.province, to_modality: form.modality,
-          to_category: form.category, to_competitionWeight: form.competitionWeight,
-          to_height: form.height, to_phone: form.phone, to_trainer: form.trainer,
-          to_instagram: form.instagram, photo_url: photoUrl, message: "REGISTRO OFICIAL AFIBA",
-          tournament_name: EVENT_NAME,
-        };
-
         await emailjs.send(SERVICE_ID_CONFIRMATION, TEMPLATE_ID_CONFIRMATION, templateParams, PUBLIC_KEY_CONFIRMATION);
         await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-
-        setModalOpen(true); // 🔥 ACTIVA EL MODAL DE ÉXITO
-        setForm({
-          email: "", fullName: "", birthDate: "", dni: "", country: "", locality: "",
-          province: "", modality: "", category: "", competitionWeight: "", height: "",
-          phone: "", instagram: "", trainer: "", photo: "",
-        });
-      } catch (error) {
-        console.error("Error al enviar formulario:", error.response?.data || error.message);
-      } finally {
-        setLoading(false); // 🔥 APAGA EL MODAL DE CARGA
+      } catch (mailError) {
+        console.warn("Inscripción guardada, pero el mail de confirmación falló:", mailError?.status || mailError);
       }
-    } else {
-      setLoading(false); // Si hay error de validación, se apaga
+
+      setModalOpen(true);
+      setForm({ email: "", fullName: "", birthDate: "", dni: "", country: "", locality: "", province: "", participations: [], competitionWeight: "", height: "", phone: "", instagram: "", trainer: "" });
+      setErrors({});
+      setStarted(false);
+    } catch (error) {
+      console.error("Error al enviar formulario:", error.response?.data || error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRegisterAnother = () => {
-    setModalOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
+  const handleRegisterAnother = () => { setModalOpen(false); setStarted(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const isFormClosed = inscriptionClosed || forceBlocked;
 
-  // ===================== VARIANTES DE ANIMACIÓN ÉPICA =====================
-  
-  const overlayVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.5 } },
-  };
+  const countdownUnits = [
+    { l: "Días", v: timeLeft.days },
+    { l: "Hrs", v: pad2(timeLeft.hours) },
+    { l: "Min", v: pad2(timeLeft.minutes) },
+    { l: "Seg", v: pad2(timeLeft.seconds) },
+  ];
 
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.5, y: 100, rotateX: -30 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      y: 0, 
-      rotateX: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 100, 
-        damping: 15, 
-        duration: 0.8,
-        delayChildren: 0.3,
-        staggerChildren: 0.2
-      } 
-    },
-    exit: { opacity: 0, scale: 0.8, y: 50, transition: { duration: 0.3 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 12 } }
-  };
-
-  const iconVariants = {
-    hidden: { opacity: 0, scale: 0, rotate: -180 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      rotate: 0, 
-      transition: { type: "spring", stiffness: 200, damping: 10, delay: 0.4 } 
-    }
-  };
-
-  // =========================================================================
+  const introVariants = { hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } } };
+  const introItem = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 220, damping: 22 } } };
 
   return (
-    <section className="w-full min-h-screen bg-neutral-500 font-primary flex items-center justify-center p-4 md:p-8">
-      
-      {/* Contenedor Principal Split-Screen */}
-      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 bg-neutral-200 rounded-[2rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/5 relative z-10">
-        
-        {/* PANEL IZQUIERDO (Info del Torneo) */}
-        <div className="lg:col-span-5 bg-primary-100 p-10 md:p-14 relative flex flex-col justify-between overflow-hidden">
-          <div className="relative z-10">
-            <Link to="/calendar" className="inline-flex items-center gap-2 text-primary-200 hover:text-white mb-10 text-xs font-bold uppercase tracking-widest transition-colors">
-              <FaArrowLeft /> Volver
-            </Link>
+    <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden font-primary px-4 py-10 md:py-16"
+      style={{ background: "radial-gradient(120% 120% at 50% -10%, #0c2a1d 0%, #061410 45%, #03100b 100%)" }}>
 
-            <div className="mb-4">
-              <span className="inline-block bg-neutral-300 text-neutral-200 font-black uppercase tracking-[0.2em] text-[10px] px-3 py-1 rounded-sm">
-                Registro de Atletas
-              </span>
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl font-black text-neutral-100 uppercase tracking-tighter leading-[1.1] mb-6">
-              {EVENT_NAME}
-            </h1>
-            
-            <p className="text-primary-200/80 font-secondary text-sm md:text-base leading-relaxed mb-12 max-w-md">
-              Completa el formulario con tus datos precisos. La información ingresada tiene carácter de declaración jurada para la participación en el evento oficial.
+      {!reduce && (
+        <>
+          <motion.div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-green-500/15 blur-3xl pointer-events-none" animate={{ x: [0, 40, 0], y: [0, 30, 0] }} transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute -bottom-32 -right-20 w-[28rem] h-[28rem] rounded-full bg-[#54A17D]/15 blur-3xl pointer-events-none" animate={{ x: [0, -50, 0], y: [0, -30, 0] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute top-1/3 left-1/2 w-72 h-72 rounded-full bg-[#f70808]/10 blur-3xl pointer-events-none" animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+        </>
+      )}
+
+      <Link to="/calendar" className="absolute top-6 left-6 z-20 inline-flex items-center gap-2 text-neutral-400 hover:text-green-400 text-xs font-bold uppercase tracking-widest transition-colors">
+        <FaArrowLeft /> Volver
+      </Link>
+
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 40, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 90, damping: 18 }}
+        className="relative z-10 w-full max-w-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-[0_30px_80px_rgba(0,0,0,0.6)] p-7 md:p-12"
+      >
+        {isFormClosed ? (
+          <div className="flex flex-col items-center justify-center text-center py-16">
+            <div className="w-24 h-24 bg-[#f70808]/10 rounded-full flex items-center justify-center mb-6"><FaExclamationTriangle className="text-[#f70808] text-4xl" /></div>
+            <h3 className="text-3xl font-black text-neutral-100 uppercase tracking-tight mb-4">No disponible</h3>
+            <p className="text-neutral-400 font-secondary max-w-md">
+              {forceBlocked ? "Este evento no gestiona inscripciones mediante la plataforma web oficial." : `El tiempo límite para registrarse en el ${EVENT_NAME} ha concluido.`}
             </p>
           </div>
-
-          <div className="relative z-10 border-t border-primary-200/20 pt-8 mt-auto">
-            <p className="text-primary-200 text-[10px] uppercase font-bold tracking-widest mb-3">Cierre de Inscripción</p>
-            <p className="text-2xl font-bold text-neutral-100 mb-8">{formatCloseAt(CLOSE_AT)} <span className="text-sm font-normal text-primary-200/60">00:00 hs</span></p>
-
-            {!isFormClosed ? (
-              <div className="flex gap-4 items-end text-neutral-100 tabular-nums">
-                {[
-                  {l:'Días',v:timeLeft.days},
-                  {l:'Hrs',v:pad2(timeLeft.hours)},
-                  {l:'Min',v:pad2(timeLeft.minutes)},
-                  {l:'Seg',v:pad2(timeLeft.seconds)}
-                ].map((t,idx)=>(
-                    <React.Fragment key={idx}>
-                      <div className="flex flex-col">
-                        <span className="text-4xl font-black leading-none">{t.v}</span>
-                        <span className="text-[9px] uppercase tracking-widest text-neutral-300 font-bold mt-1">{t.l}</span>
-                      </div>
-                      {idx < 3 && <span className="text-2xl font-black text-primary-200/30 mb-4">:</span>}
-                    </React.Fragment>
-                ))}
-              </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {!started ? (
+              <motion.div key="intro" variants={introVariants} initial="hidden" animate="show" exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.25 } }} className="text-center">
+                <motion.span variants={introItem} className="inline-block text-green-400 font-black uppercase tracking-[0.3em] text-[10px] mb-3">Registro oficial · AFIBA</motion.span>
+                <motion.h1 variants={introItem} className="text-3xl md:text-5xl font-black text-neutral-100 uppercase tracking-tighter leading-[1.05]">{EVENT_NAME}</motion.h1>
+                <motion.span variants={introItem} className="block mt-6 text-neutral-500 text-[10px] uppercase font-bold tracking-widest">Cierra el {formatCloseAt(CLOSE_AT)}</motion.span>
+                <motion.div variants={introItem} className="mt-4 flex justify-center gap-2.5">
+                  {countdownUnits.map((u, i) => (
+                    <div key={i} className="px-3.5 py-2 rounded-xl bg-black/30 border border-white/10 text-center min-w-[54px]">
+                      <div className="text-xl md:text-2xl font-black text-neutral-100 tabular-nums leading-none">{u.v}</div>
+                      <div className="text-[8px] uppercase tracking-widest text-neutral-500 mt-1 font-bold">{u.l}</div>
+                    </div>
+                  ))}
+                </motion.div>
+                <motion.p variants={introItem} className="mt-8 text-neutral-400 font-secondary text-sm max-w-md mx-auto">Completá tu preinscripción oficial en simples pasos.</motion.p>
+                <motion.div variants={introItem} className="mt-7 flex justify-center">
+                  <motion.button onClick={() => setStarted(true)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
+                    className="relative overflow-hidden inline-flex items-center gap-3 px-9 py-4 rounded-2xl bg-green-500 text-black font-black uppercase tracking-widest text-sm shadow-[0_15px_40px_rgba(34,197,94,0.45)]">
+                    {!reduce && <motion.span aria-hidden className="absolute inset-y-0 w-1/3 bg-white/40 -skew-x-12 pointer-events-none" initial={{ x: "-200%" }} animate={{ x: "400%" }} transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1 }} />}
+                    <span className="relative inline-flex items-center gap-2"><FaBolt /> Empezar inscripción <FaArrowRight /></span>
+                  </motion.button>
+                </motion.div>
+              </motion.div>
             ) : (
-              <div className="inline-flex items-center gap-2 bg-primary-400/20 text-primary-400 border border-primary-400/30 px-4 py-2 rounded-lg">
-                <FaLock size={12} />
-                <span className="text-xs font-bold uppercase tracking-widest">Inscripción Cerrada</span>
-              </div>
+              <motion.div key="form" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 20 } }} exit={{ opacity: 0 }}>
+                <div className="text-center mb-8">
+                  <span className="inline-block text-green-400 font-black uppercase tracking-[0.3em] text-[10px] mb-1">Registro oficial · AFIBA</span>
+                  <h2 className="text-2xl md:text-3xl font-black text-neutral-100 uppercase tracking-tight">{EVENT_NAME}</h2>
+                </div>
+                <Form
+                  form={form} setForm={setForm} errors={errors} setErrors={setErrors}
+                  handleChange={handleChange} handleSubmit={handleSubmit} loading={loading}
+                  localities={LOCALITIES} modalities={MODALITIES} categories={CATEGORIES}
+                  provinces={PROVINCES} countries={SOUTH_AMERICAN_COUNTRIES}
+                />
+              </motion.div>
             )}
-          </div>
-        </div>
+          </AnimatePresence>
+        )}
+      </motion.div>
 
-        {/* PANEL DERECHO (Formulario) */}
-        <div className="lg:col-span-7 bg-neutral-200 p-8 md:p-14 relative flex flex-col justify-center">
-          
-          {!isFormClosed ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="w-full text-neutral-100">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-neutral-100 uppercase tracking-wide">Datos del Competidor</h3>
-                <p className="text-neutral-400 font-secondary text-sm mt-1">Verifica tu información antes de enviar.</p>
-              </div>
-              <Form form={form} setForm={setForm} errors={errors} handleChange={handleChange} handleSubmit={handleSubmit} validateForm={validateForm} fileInputRef={fileInputRef} localities={LOCALITIES} modalities={MODALITIES} categories={CATEGORIES} provinces={PROVINCES} countries={SOUTH_AMERICAN_COUNTRIES} loading={loading} />
-            </motion.div>
-          ) : (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center h-full py-20">
-              <div className="w-24 h-24 bg-primary-400/5 rounded-full flex items-center justify-center mb-6"> <FaExclamationTriangle className="text-primary-400 text-4xl" /> </div>
-              <h3 className="text-3xl font-black text-neutral-100 uppercase tracking-tight mb-4"> No Disponible </h3>
-              <p className="text-neutral-400 font-secondary text-base max-w-md"> {forceBlocked ? "Este evento no gestiona inscripciones mediante la plataforma web oficial." : `El tiempo límite para registrarse en el ${EVENT_NAME} ha concluido satisfactoriamente.`} </p>
-            </motion.div>
-          )}
-
-        </div>
-      </div>
-
-      {/* ===================== MODAL DE CARGA (PROCESANDO) ===================== */}
       <AnimatePresence>
         {loading && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-neutral-500/95 z-[60] p-4 backdrop-blur-md"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          <motion.div className="fixed inset-0 flex items-center justify-center bg-black/85 z-[60] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="flex flex-col items-center">
-              {/* Anillos Giratorios Épicos */}
-              <div className="relative w-28 h-28 mb-8 flex items-center justify-center">
-                {/* Anillo exterior Mint */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-0 rounded-full border-t-4 border-b-4 border-neutral-300 shadow-[0_0_20px_#54A17D]"
-                />
-                {/* Anillo interior Verde Oscuro */}
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-3 rounded-full border-r-4 border-l-4 border-primary-100 opacity-80"
-                />
-                {/* Icono central latiendo */}
-                <FaDumbbell className="text-neutral-300 text-3xl animate-pulse" />
+              <div className="relative w-32 h-32 mb-7 flex items-center justify-center">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-t-4 border-b-4 border-green-500 shadow-[0_0_25px_#22c55e]" />
+                <motion.div animate={{ rotate: -360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-2 rounded-full border-r-4 border-l-4 border-[#54A17D]" />
+                <motion.img src={afibaLogo} alt="AFIBA" className="relative w-20 h-20 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.7)]"
+                  animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} />
               </div>
-              
-              <motion.h3
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-2xl md:text-3xl font-black text-white uppercase tracking-[0.3em] mb-3"
-              >
-                Procesando
-              </motion.h3>
-              <p className="text-neutral-400 font-secondary text-xs tracking-widest uppercase animate-pulse">
-                Encriptando datos y subiendo archivos...
-              </p>
+              <div className="h-6 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  <motion.p key={loadingMsg} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3 }}
+                    className="text-neutral-100 font-bold uppercase tracking-widest text-sm text-center">
+                    {LOADING_MESSAGES[loadingMsg]}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ===================== MODAL DE ÉXITO EDITORIAL ===================== */}
       <AnimatePresence>
         {modalOpen && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-neutral-500/95 z-50 p-4 md:p-10 backdrop-blur-sm"
-            variants={overlayVariants}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-          >
-            <motion.div
-              className="bg-neutral-200 p-12 md:p-16 rounded-[3rem] shadow-[0_0_80px_rgba(84,161,125,0.3)] max-w-2xl w-full text-center relative overflow-hidden border border-neutral-300"
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              style={{ perspective: 1000 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Brillo de fondo sutil que late */}
-              <motion.div 
-                animate={{ opacity: [0.1, 0.25, 0.1] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(84,161,125,0.2),_transparent_70%)] pointer-events-none"
-              />
-
-              {/* Icono Check Épico Animado */}
-              <motion.div 
-                className="w-32 h-32 bg-neutral-300/10 rounded-full flex items-center justify-center mx-auto mb-10 shadow-[0_0_30px_rgba(84,161,125,0.2)] border border-neutral-300/20"
-                variants={iconVariants}
-              >
-                <FaCheckCircle className="text-neutral-300 text-7xl drop-shadow-[0_0_15px_rgba(84,161,125,0.6)]" />
+          <motion.div className="fixed inset-0 flex items-center justify-center bg-black/85 z-[70] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div initial={{ opacity: 0, scale: 0.6, y: 60 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8, y: 40 }} transition={{ type: "spring", stiffness: 110, damping: 15 }}
+              className="w-full max-w-lg bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-10 md:p-14 text-center shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
+              <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 200, damping: 11, delay: 0.2 }} className="flex justify-center mb-6">
+                <FaCheckCircle className="text-green-400 text-6xl drop-shadow-[0_0_18px_#22c55e]" />
               </motion.div>
-              
-              {/* Título Monumental e Épico */}
-              <motion.h3 
-                className="text-5xl md:text-6xl font-black text-white uppercase italic tracking-tighter leading-none mb-6 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]"
-                variants={itemVariants}
-              >
-                ¡Registro <br /> Confirmado!
-              </motion.h3>
-              
-              {/* Texto Subrayado (Sutil barra lateral) */}
-              <motion.div variants={itemVariants} className="w-24 h-1.5 bg-neutral-300 mx-auto mb-8 rounded-full shadow-[0_0_10px_#54A17D]" />
-
-              {/* Texto de información más grande y claro */}
-              <motion.p 
-                className="text-neutral-100 font-secondary text-base md:text-lg mb-12 max-w-lg mx-auto leading-relaxed"
-                variants={itemVariants}
-              >
-                Tus datos han sido procesados y hemos enviado un ticket de confirmación a tu correo electrónico. Por favor, <strong className="text-white font-bold">verifica tu carpeta de SPAM</strong> si no lo encuentras en breve.
-              </motion.p>
-
-              {/* Botones de Acción */}
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.button 
-                  onClick={handleRegisterAnother}
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(84,161,125,0.4)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-4 px-6 bg-neutral-300 text-neutral-200 font-black uppercase tracking-widest text-xs rounded-2xl transition-shadow shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
-                >
-                  Otra Modalidad
-                </motion.button>
-
+              <h3 className="text-3xl md:text-4xl font-black text-neutral-100 uppercase tracking-tight mb-2">¡Inscripción enviada!</h3>
+              <div className="w-24 h-1.5 bg-green-500 mx-auto mb-7 rounded-full shadow-[0_0_12px_#22c55e]" />
+              <p className="text-neutral-300 font-secondary md:text-lg mb-10 leading-relaxed">
+                Te enviamos los datos de tu preinscripción a tu correo. <strong className="text-white">Revisá tu carpeta de SPAM</strong> si no lo ves en breve.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <motion.button onClick={handleRegisterAnother} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}
+                  className="w-full py-4 px-6 bg-green-500 text-black font-black uppercase tracking-widest text-xs rounded-2xl shadow-[0_10px_30px_rgba(34,197,94,0.4)]">Nueva inscripción</motion.button>
                 <Link to="/" className="w-full">
-                  <motion.button 
-                    whileHover={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-4 px-6 bg-transparent border-2 border-neutral-400/20 text-neutral-300 font-bold uppercase tracking-widest text-xs rounded-2xl transition-all"
-                  >
-                    Finalizar y Volver
-                  </motion.button>
+                  <motion.button whileHover={{ backgroundColor: "rgba(255,255,255,0.08)" }} whileTap={{ scale: 0.98 }}
+                    className="w-full py-4 px-6 bg-transparent border-2 border-white/15 text-neutral-300 font-bold uppercase tracking-widest text-xs rounded-2xl transition-colors">Finalizar y volver</motion.button>
                 </Link>
-              </motion.div>
-
+              </div>
             </motion.div>
           </motion.div>
         )}
