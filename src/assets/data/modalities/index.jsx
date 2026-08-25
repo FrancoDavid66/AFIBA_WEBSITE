@@ -20,6 +20,17 @@ import womens_physique_reglamento_ifbb from "../../imgs/modalities/womens-physiq
 import mens_wheelchair from "../../imgs/modalities/mens_wheelchair.png";
 
 
+// ✅ Fit & Beauty: toma automáticamente todo lo que haya en la carpeta,
+// sin importar el nombre ni la extensión de los archivos.
+const fabModules = import.meta.glob(
+  "../../imgs/modalities/fit_and_beauty/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+  { eager: true }
+);
+const fabImages = Object.keys(fabModules)
+  .sort()
+  .map((k) => fabModules[k].default);
+
+
 //PDFS RULES
 import manual_de_BIKINI_FITNESS from "../../pdf/modalities/1-Manual-de-BIKINI-FITNESS.pdf";
 import manual_de_WELLNESS_FITNESS from "../../pdf/modalities/2-Manual-de-WELLNESS-FITNESS.pdf";
@@ -39,6 +50,7 @@ import manual_de_FITNESS_COREOGRAFICO_MASCULINO_MENS_FITNESS from "../../pdf/mod
 import reglamento_fit_model_masculino_ifbb from "../../pdf/modalities/15-Manual-de-FIT-MODEL-MASCULINO.pdf";
 import REGLAMENTO_FIT_PAIRS_PAREJAS_FITNESS_CSFF from "../../pdf/modalities/16-Manual-de-FIT-PAIRS-PAREJAS-FITNESS.pdf";
 import manual_MENS_WHEELCHAIR from "../../pdf/modalities/17-Manual-de-MENS-WHEELCHAIR.pdf";
+import manual_de_FIT_AND_BEAUTY from "../../pdf/modalities/18-Manual-de-FIT-AND-BEAUTY.pdf";
 
 
 //image bikini fitness
@@ -447,6 +459,29 @@ export const MODALITIES = [
       {image:null},
       {image:null},   ]
   
+  },
+
+  {
+    id:'18',
+    title: "FIT & BEAUTY",
+    description:
+      "Fit & Beauty es una categoria de exhibicion y presencia escenica en la que se evalua " +
+      "la armonia general de la atleta: tono muscular equilibrado, proporcion, postura, " +
+      "desplazamiento en escenario y presentacion integral. La competencia se desarrolla en " +
+      "dos rounds con indumentarias diferenciadas. Round 1 - Sport Wear: top blanco de espalda " +
+      "atletica, shorts de lycra, medias blancas hasta la rodilla y zapatillas blancas sin " +
+      "plataforma, buscando un look deportivo, fresco y natural. Round 2 - Swimsuit: traje de " +
+      "bano negro de malla entera con tiras gruesas y espalda cerrada, acompanado de zapatos " +
+      "reglamentarios IFBB transparentes con suela de 1 cm y tacon de 12 cm, buscando elegancia, " +
+      "seguridad y presencia escenica. El color de la vestimenta puede variar segun el " +
+      "organizador, excepto las medias del Round 1, que son obligatorias.",
+    image: fabImages[0] || null,
+    rules: manual_de_FIT_AND_BEAUTY,
+    result: [
+        {year:'2026', pdf:''}
+    ],
+    tag: "femenino",
+    images: fabImages.map((img) => ({ image: img })),
   },
 
 ];

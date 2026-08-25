@@ -149,6 +149,7 @@ export const MODALITIES = [
   "BODY FITNESS",
   "WOMEN´S PHYSIQUE",
   "FITNESS COREOGRÁFICO",
+  "FIT & BEAUTY",
   "PAREJA"
 ];
 

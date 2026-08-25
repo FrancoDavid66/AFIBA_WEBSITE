@@ -6,7 +6,6 @@ export const NAV = [
   { name: "RESULTADOS", href: "/Results" },
   { name: "MODALIDADES", href: "/modalidades" },
   { name: "GALERIA", href: "/torneos" },
-  { name: "REGLAMENTOS", href: "/Rules" },
  
 ];
 ;
@@ -26,8 +25,7 @@ export const NAV_LARGE = [
  
     subMenu: [
       { name: "GALERIA", href: "/torneos" },
-      { name: "MODALIDADES", href: "/modalidades" },
-      { name: "REGLAMENTOS", href: "/Rules" },
+      { name: "MODALIDADES Y REGLAMENTOS", href: "/modalidades" },
       { name: "RESULTADOS", href: "/Results" },
 
     ],

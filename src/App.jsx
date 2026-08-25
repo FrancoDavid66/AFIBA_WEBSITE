@@ -1,9 +1,8 @@
 import React, { useEffect, lazy, Suspense } from "react";
-import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import LoadingScreen from "./assets/components/LoadingScreen";
 import Results from "./assets/components/Results";
-import Rules from "./assets/pages/rules";
 import SponsorVideos from "./assets/components/SponsorVideos";
 import InscriptionFAB from "./assets/components/InscriptionFAB";
 import InAppBrowserNotice from "./assets/components/InAppBrowserNotice";
@@ -22,11 +21,8 @@ const Footer = lazy(() => import("./assets/components/footer/Footer"));
 const RegistrationForm = lazy(() => import("./assets/pages/RegistrationForm"));
 const About = lazy(() => import("./assets/pages/about"));
 const Calendar = lazy(() => import("./assets/pages/calendar/Calendar"));
-const Modalities = lazy(() => import("./assets/pages/modalities"));
+const Categorias = lazy(() => import("./assets/pages/categorias"));
 const Tournaments = lazy(() => import("./assets/pages/tournaments"));
-const ModalitiesView = lazy(() =>
-  import("./assets/components/views/home/ModalitiesView")
-);
 
 import ScrollToTop from "./assets/utils/ScrollToTop";
 
@@ -64,23 +60,25 @@ const AnimatedRoutes = () => {
           path="/Calendar"
           element={<PageWrapper component={<Calendar />} />}
         />
+
+        {/* Modalidades y reglamentos unificados */}
         <Route
           path="/modalidades"
-          element={<PageWrapper component={<Modalities />} />}
+          element={<PageWrapper component={<Categorias />} />}
         />
+        {/* Compatibilidad con rutas anteriores */}
+        <Route path="/modalidad/:id" element={<Navigate to="/modalidades" replace />} />
+        <Route path="/reglaments" element={<Navigate to="/modalidades" replace />} />
+        <Route path="/Rules" element={<Navigate to="/modalidades" replace />} />
+
         <Route
           path="/NoticesViews/:id"
           element={<PageWrapper component={<NoticesViews />} />}
         />
         <Route
-          path="/modalidad/:id"
-          element={<PageWrapper component={<ModalitiesView />} />}
-        />
-        <Route
           path="/Results"
           element={<PageWrapper component={<Results />} />}
         />
-        <Route path="/Rules" element={<PageWrapper component={<Rules />} />} />
         <Route
           path="/RegistrationForm"
           element={<PageWrapper component={<RegistrationForm />} />}

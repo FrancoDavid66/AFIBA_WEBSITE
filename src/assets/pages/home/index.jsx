@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Results from "../../components/home/Results";
 import Newsletter from "../../components/home/Newsletter";
 import OpenInscriptionBanner from "../../components/home/OpenInscriptionBanner";
+import NewsModal from "../../components/home/NewsModal";
 
 // Lazy-loaded components
 const BannerMain = React.lazy(() => import("../../components/home/BannerMain"));
@@ -32,6 +33,9 @@ const Home = () => {
       initial="hidden"
       animate="show"
     >
+      {/* Modal de novedades (se muestra al entrar) */}
+      <NewsModal />
+
       <Suspense fallback={<div className="py-20 text-center text-neutral-400">Cargando...</div>}>
         {/* 1. Hero principal */}
         <motion.div variants={itemVariants} className="mb-8">
