@@ -48,7 +48,7 @@ export const CALENDAR_AFIBA = {
       organizer: "AFIBA - Prom. Pablo Roldan (2281584117)",
       link: "https://www.instagram.com/afibaoficial/",
       image: null, // Flyer no disponible
-      available: false
+      available: true // INSCRIPCIÓN HABILITADA (cierra sola el 10/10 a las 00:00)
     }
   ],
   NOVIEMBRE: [

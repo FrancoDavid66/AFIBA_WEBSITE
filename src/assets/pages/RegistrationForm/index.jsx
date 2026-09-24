@@ -1,11 +1,12 @@
 // src/assets/pages/RegistrationForm/index.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import emailjs from "@emailjs/browser";
 import { Link, useLocation } from "react-router-dom";
 import { LOCALITIES, MODALITIES, CATEGORIES, PROVINCES, SOUTH_AMERICAN_COUNTRIES } from "../../data/form";
 import { createTask } from "../../../api/tasks.api.js";
 import { validateForm } from "../../utils/form/validateForm";
+import { getOpenEvent } from "../../utils/calendar/openEvent";
 import Form from "../../components/form/Form.jsx";
 import { FaCheckCircle, FaLock, FaExclamationTriangle, FaArrowLeft, FaArrowRight, FaBolt } from "react-icons/fa";
 import afibaLogo from "../../imgs/logo.png";
@@ -21,25 +22,31 @@ const TournamentsForm = () => {
   const reduce = useReducedMotion();
   const location = useLocation();
 
-  const DEFAULT_TOURNAMENT = useMemo(() => ({ name: "OPEN IFBB TANDIL", date: "2026-05-10" }), []);
+  // Si entran por link directo (sin pasar por el calendario), se usa el evento
+  // que hoy tiene la inscripción abierta según el calendario (openEvent.js).
+  const DEFAULT_TOURNAMENT = useMemo(() => {
+    const ev = getOpenEvent();
+    return ev ? { name: ev.name, date: ev.fullDate } : null;
+  }, []);
 
   const queryTournament = useMemo(() => {
     const params = new URLSearchParams(location.search || "");
     const name = params.get("tournament") || params.get("event") || params.get("name");
     const date = params.get("date");
     if (!name && !date) return null;
-    return { name: name || DEFAULT_TOURNAMENT.name, date: date || DEFAULT_TOURNAMENT.date };
+    return { name: name || DEFAULT_TOURNAMENT?.name || "", date: date || DEFAULT_TOURNAMENT?.date || "" };
   }, [location.search, DEFAULT_TOURNAMENT]);
 
   const tournamentFromState = location.state?.tournament;
-  const resolvedDate = tournamentFromState?.fullDate || tournamentFromState?.date || queryTournament?.date || DEFAULT_TOURNAMENT.date;
+  const resolvedDate = tournamentFromState?.fullDate || tournamentFromState?.date || queryTournament?.date || DEFAULT_TOURNAMENT?.date || "";
   const tournament = {
     ...tournamentFromState,
-    name: tournamentFromState?.name || queryTournament?.name || DEFAULT_TOURNAMENT.name,
+    name: tournamentFromState?.name || queryTournament?.name || DEFAULT_TOURNAMENT?.name || "",
     date: resolvedDate,
   };
 
   const EVENT_NAME = tournament.name;
+  const noOpenEvent = !EVENT_NAME;
   const forceBlocked = EVENT_NAME.toLowerCase().includes("copa provincia");
 
   const CLOSE_AT = useMemo(() => {
@@ -80,6 +87,18 @@ const TournamentsForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // Participaciones ya guardadas en el intento actual: si el envío se corta a mitad
+  // de camino y el atleta reintenta, no se duplican. Si edita algún dato, se reinicia.
+  const savedRef = useRef(new Set());
+  useEffect(() => { savedRef.current = new Set(); setSubmitError(""); }, [form]);
+
+  // Si aparece un error, lo llevamos a la vista (en celu queda debajo del botón).
+  const errorRef = useRef(null);
+  useEffect(() => {
+    if (submitError) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [submitError]);
 
   const LOADING_MESSAGES = ["Registrando tu inscripción...", "Confirmando tu lugar...", "Casi listo..."];
   const [loadingMsg, setLoadingMsg] = useState(0);
@@ -95,27 +114,46 @@ const TournamentsForm = () => {
     setForm((prev) => ({ ...prev, [name]: v }));
   };
 
-  const formatDate = (s) => { const d = new Date(s); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`; };
+  // "YYYY-MM-DD" -> "DD/MM/YYYY" sin pasar por new Date() (evita que en Argentina reste un día).
+  const formatDate = (s) => {
+    const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? String(s || "") : `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  };
+
+  const isFormClosed = noOpenEvent || inscriptionClosed || forceBlocked;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    if (inscriptionClosed || forceBlocked || Date.now() >= CLOSE_AT.getTime()) { setLoading(false); return; }
+    if (loading) return;
+    setSubmitError("");
+    if (isFormClosed || Date.now() >= CLOSE_AT.getTime()) return;
 
     const tempErrors = validateForm(form);
     setErrors(tempErrors);
-    if (Object.keys(tempErrors).length > 0) { setLoading(false); return; }
+    if (Object.keys(tempErrors).length > 0) {
+      setSubmitError("Falta completar algún dato. Volvé a los pasos anteriores y revisalo.");
+      return;
+    }
 
+    setLoading(true);
     try {
       const formattedBirthDateForEmail = formatDate(form.birthDate);
       let backendDate = form.birthDate;
       if (backendDate.includes("/")) { const p = backendDate.split("/"); if (p.length === 3) backendDate = `${p[2]}-${p[1]}-${p[0]}`; }
 
-      // El backend recibe el array de participaciones y crea una fila por cada combo.
-      const apiData = { ...form, birthDate: backendDate, event: EVENT_NAME };
-      await createTask(apiData);
+      // Una fila en la base por cada modalidad/categoría (mismo formato que FAMF y ACORFFI),
+      // así el panel y el Excel filtran bien sin depender de que el backend separe el array.
+      const { participations: parts = [], ...personal } = form;
+      const base = { ...personal, birthDate: backendDate, event: EVENT_NAME };
+      for (const p of parts) {
+        const key = `${p.modality}__${p.category}`;
+        if (savedRef.current.has(key)) continue;
+        await createTask({ ...base, modality: p.modality, category: p.category });
+        savedRef.current.add(key);
+      }
 
-      const parts = form.participations || [];
       const participationsText = parts.map((p) => `${p.modality} - ${p.category}`).join(" | ");
 
       const templateParams = {
@@ -143,13 +181,13 @@ const TournamentsForm = () => {
       setStarted(false);
     } catch (error) {
       console.error("Error al enviar formulario:", error.response?.data || error.message);
+      setSubmitError("No pudimos registrar tu inscripción. Revisá tu conexión y tocá \"Enviar inscripción\" de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleRegisterAnother = () => { setModalOpen(false); setStarted(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
-  const isFormClosed = inscriptionClosed || forceBlocked;
 
   const countdownUnits = [
     { l: "Días", v: timeLeft.days },
@@ -184,9 +222,13 @@ const TournamentsForm = () => {
         {isFormClosed ? (
           <div className="flex flex-col items-center justify-center text-center py-16">
             <div className="w-24 h-24 bg-[#f70808]/10 rounded-full flex items-center justify-center mb-6"><FaExclamationTriangle className="text-[#f70808] text-4xl" /></div>
-            <h3 className="text-3xl font-black text-neutral-100 uppercase tracking-tight mb-4">No disponible</h3>
+            <h3 className="text-3xl font-black text-neutral-100 uppercase tracking-tight mb-4">{noOpenEvent ? "Sin inscripciones abiertas" : "No disponible"}</h3>
             <p className="text-neutral-400 font-secondary max-w-md">
-              {forceBlocked ? "Este evento no gestiona inscripciones mediante la plataforma web oficial." : `El tiempo límite para registrarse en el ${EVENT_NAME} ha concluido.`}
+              {noOpenEvent
+                ? "En este momento no hay torneos con inscripción abierta. Mirá el calendario para ver el próximo."
+                : forceBlocked
+                  ? "Este evento no gestiona inscripciones mediante la plataforma web oficial."
+                  : `El tiempo límite para registrarse en el ${EVENT_NAME} ha concluido.`}
             </p>
           </div>
         ) : (
@@ -225,6 +267,15 @@ const TournamentsForm = () => {
                   localities={LOCALITIES} modalities={MODALITIES} categories={CATEGORIES}
                   provinces={PROVINCES} countries={SOUTH_AMERICAN_COUNTRIES}
                 />
+                <AnimatePresence>
+                  {submitError && (
+                    <motion.div key="submit-error" ref={errorRef} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                      role="alert" className="mt-6 flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-left">
+                      <FaExclamationTriangle className="text-red-400 mt-0.5 shrink-0" />
+                      <p className="text-red-200 text-sm font-secondary leading-relaxed">{submitError}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
