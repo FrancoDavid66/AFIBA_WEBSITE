@@ -11,11 +11,23 @@ import Form from "../../components/form/Form.jsx";
 import { FaCheckCircle, FaLock, FaExclamationTriangle, FaArrowLeft, FaArrowRight, FaBolt } from "react-icons/fa";
 import afibaLogo from "../../imgs/logo.png";
 
+// Marca de AFIBA para los mails (los templates de EmailJS son híbridos AFIBA/FAMF)
+const FED_BRAND = {
+  fed_name: "AFIBA",
+  fed_full_name: "Asociación de Fisicoculturismo de la Provincia de Buenos Aires",
+  fed_color: "#114232",
+  fed_accent: "#f70808",
+  fed_logo: "https://afibaoficial.com/assets/logo-dElzg_MB.png",
+  fed_web: "afibaoficial.com",
+  fed_email: "afibaoficialonline@gmail.com",
+};
+
 const TournamentsForm = () => {
-  const TEMPLATE_ID = "template_2b1petm";
+  // EmailJS — cuenta compartida con FAMF (templates híbridos: la marca va en FED_BRAND)
+  const TEMPLATE_ID = "template_2b1petm"; // aviso a la federación
   const SERVICE_ID = "service_soiecur";
   const PUBLIC_KEY = "i_NVru_5O1nhFJ0re";
-  const TEMPLATE_ID_CONFIRMATION = "template_vunrnaa";
+  const TEMPLATE_ID_CONFIRMATION = "template_vunrnaa"; // confirmación al atleta
   const SERVICE_ID_CONFIRMATION = "service_soiecur";
   const PUBLIC_KEY_CONFIRMATION = "i_NVru_5O1nhFJ0re";
 
@@ -94,6 +106,15 @@ const TournamentsForm = () => {
   const savedRef = useRef(new Set());
   useEffect(() => { savedRef.current = new Set(); setSubmitError(""); }, [form]);
 
+  // Logo del loader: se precarga al abrir el formulario para que aparezca al instante.
+  // Si por algún motivo no carga, se muestra "AFIBA" en texto (nunca el ícono de imagen rota).
+  const [logoOk, setLogoOk] = useState(true);
+  useEffect(() => {
+    const img = new Image();
+    img.onerror = () => setLogoOk(false);
+    img.src = afibaLogo;
+  }, []);
+
   // Si aparece un error, lo llevamos a la vista (en celu queda debajo del botón).
   const errorRef = useRef(null);
   useEffect(() => {
@@ -157,6 +178,7 @@ const TournamentsForm = () => {
       const participationsText = parts.map((p) => `${p.modality} - ${p.category}`).join(" | ");
 
       const templateParams = {
+        ...FED_BRAND,
         form_name: form.fullName, to_name: form.fullName, to_email: form.email,
         to_birthDate: formattedBirthDateForEmail, to_dni: form.dni, to_locality: form.locality,
         to_country: form.country, to_province: form.province,
@@ -167,13 +189,18 @@ const TournamentsForm = () => {
         to_phone: form.phone, to_trainer: form.trainer, to_instagram: form.instagram,
         message: "REGISTRO OFICIAL AFIBA", tournament_name: EVENT_NAME, to_event: EVENT_NAME,
       };
-      // El mail NO es crítico: la inscripción ya quedó guardada en la base.
-      try {
-        await emailjs.send(SERVICE_ID_CONFIRMATION, TEMPLATE_ID_CONFIRMATION, templateParams, PUBLIC_KEY_CONFIRMATION);
-        await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-      } catch (mailError) {
-        console.warn("Inscripción guardada, pero el mail de confirmación falló:", mailError?.status || mailError);
-      }
+      // Los mails NO son críticos: la inscripción ya quedó guardada en la base.
+      // Cada mail sale por separado: si uno falla, el otro igual se envía,
+      // y en la consola (F12) queda el motivo exacto que devuelve EmailJS.
+      const sendMail = async (destino, serviceId, templateId, publicKey) => {
+        try {
+          await emailjs.send(serviceId, templateId, templateParams, publicKey);
+        } catch (mailError) {
+          console.warn("[EmailJS] No salió el mail " + destino + " (" + templateId + "):", mailError?.status, mailError?.text || mailError);
+        }
+      };
+      await sendMail("al atleta", SERVICE_ID_CONFIRMATION, TEMPLATE_ID_CONFIRMATION, PUBLIC_KEY_CONFIRMATION);
+      await sendMail("a la federación", SERVICE_ID, TEMPLATE_ID, PUBLIC_KEY);
 
       setModalOpen(true);
       setForm({ email: "", fullName: "", birthDate: "", dni: "", country: "", locality: "", province: "", participations: [], competitionWeight: "", height: "", phone: "", instagram: "", trainer: "" });
@@ -289,8 +316,13 @@ const TournamentsForm = () => {
               <div className="relative w-32 h-32 mb-7 flex items-center justify-center">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }} className="absolute inset-0 rounded-full border-t-4 border-b-4 border-green-500 shadow-[0_0_25px_#22c55e]" />
                 <motion.div animate={{ rotate: -360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute inset-2 rounded-full border-r-4 border-l-4 border-[#54A17D]" />
-                <motion.img src={afibaLogo} alt="AFIBA" className="relative w-20 h-20 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.7)]"
-                  animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} />
+                {logoOk ? (
+                  <motion.img src={afibaLogo} alt="" onError={() => setLogoOk(false)} className="relative w-20 h-20 object-contain drop-shadow-[0_0_12px_rgba(34,197,94,0.7)]"
+                    animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} />
+                ) : (
+                  <motion.span className="relative text-green-400 font-black text-xl tracking-[0.2em] drop-shadow-[0_0_12px_rgba(34,197,94,0.7)]"
+                    animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}>AFIBA</motion.span>
+                )}
               </div>
               <div className="h-6 flex items-center justify-center">
                 <AnimatePresence mode="wait">
