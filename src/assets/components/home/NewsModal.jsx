@@ -1,7 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { FaChevronLeft, FaChevronRight, FaTrophy, FaFileAlt, FaMedal } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaTrophy,
+  FaFileAlt,
+  FaMedal,
+  FaBolt,
+  FaInfoCircle,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
+import { getOpenEvent, formatFechaLarga } from "../../utils/calendar/openEvent";
+import { FEATURED_SPONSOR } from "../../data/sponsors";
 
 // ✅ Fit & Beauty: toma automáticamente todo lo que haya en la carpeta,
 // sin importar el nombre ni la extensión de los archivos.
@@ -20,8 +31,50 @@ const DOT_ACTIVE = "w-8 bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.8)]";
 const DOT_IDLE = "w-2 bg-white/20 hover:bg-white/40";
 const CTA_CLASS =
   "group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 px-7 py-3.5 text-xs sm:text-sm font-black uppercase tracking-widest text-slate-950 shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-shadow hover:shadow-[0_0_45px_rgba(234,179,8,0.65)]";
+const CTA_GREEN =
+  "group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full bg-gradient-to-r from-green-400 to-green-600 px-6 py-3.5 text-xs sm:text-sm font-black uppercase tracking-widest text-black shadow-[0_0_25px_rgba(34,197,94,0.45)] transition-shadow hover:shadow-[0_0_45px_rgba(34,197,94,0.7)]";
+const CTA_ORANGE =
+  "group relative inline-flex items-center gap-2.5 overflow-hidden rounded-full bg-gradient-to-r from-orange-400 to-orange-600 px-7 py-3.5 text-xs sm:text-sm font-black uppercase tracking-widest text-black shadow-[0_0_25px_rgba(249,115,22,0.45)] transition-shadow hover:shadow-[0_0_45px_rgba(249,115,22,0.7)]";
+const CTA_GHOST =
+  "group relative inline-flex items-center gap-2 overflow-hidden rounded-full border-2 border-white/25 px-5 py-3 text-xs sm:text-sm font-black uppercase tracking-widest text-white transition-colors hover:border-white/50 hover:bg-white/10";
 
-const SLIDES = [
+const CTA_STYLES = { gold: CTA_CLASS, green: CTA_GREEN, orange: CTA_ORANGE, ghost: CTA_GHOST };
+
+const CtaIcon = ({ icon }) => {
+  if (icon === "doc") return <FaFileAlt className="relative z-10" />;
+  if (icon === "bolt") return <FaBolt className="relative z-10" />;
+  if (icon === "info") return <FaInfoCircle className="relative z-10" />;
+  if (icon === "external") return <FaExternalLinkAlt className="relative z-10" />;
+  return <FaTrophy className="relative z-10" />;
+};
+
+// Botón del slide: link interno (to) o externo (href)
+const CtaButton = ({ cta, onClose }) => {
+  const cls = CTA_STYLES[cta.style || "gold"] || CTA_CLASS;
+  const inner = (
+    <>
+      <span className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-700 group-hover:translate-x-full" />
+      <CtaIcon icon={cta.icon} />
+      <span className="relative z-10">{cta.label}</span>
+    </>
+  );
+  return (
+    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+      {cta.href ? (
+        <a href={cta.href} target="_blank" rel="noopener noreferrer" onClick={onClose} className={cls}>
+          {inner}
+        </a>
+      ) : (
+        <Link to={cta.to} state={cta.state} onClick={onClose} className={cls}>
+          {inner}
+        </Link>
+      )}
+    </motion.div>
+  );
+};
+
+// Slides fijos (los de "inscripciones abiertas" y "nuevo sponsor" se arman solos abajo)
+const BASE_SLIDES = [
   {
     id: "fit-and-beauty",
     category: "Nueva Categoría",
@@ -49,7 +102,44 @@ const SLIDES = [
   },
 ];
 
+// Slide automático: torneo con inscripción abierta (sale del calendario)
+const buildOpenEventSlide = () => {
+  const ev = getOpenEvent();
+  if (!ev) return null;
+  const venue = ev.details?.venue || ev.location;
+  return {
+    id: "inscripciones-" + ev.fullDate,
+    category: "Inscripciones abiertas",
+    title: ev.name,
+    subtitle: formatFechaLarga(ev.fullDate) + (venue ? " · " + venue : ""),
+    image: ev.image || null,
+    design: ev.image ? undefined : { eyebrow: "Ya te podés anotar", lead: venue },
+    cta: { to: "/RegistrationForm", state: { tournament: ev }, label: "Inscribirme", icon: "bolt", style: "green" },
+    cta2: ev.details ? { to: "/info-torneo", state: { tournament: ev }, label: "Más info", icon: "info", style: "ghost" } : null,
+    duration: 9000,
+  };
+};
+
+// Slide del sponsor nuevo
+const SPONSOR_SLIDE = FEATURED_SPONSOR
+  ? {
+      id: "sponsor-" + FEATURED_SPONSOR.name.toLowerCase(),
+      category: "Nuevo sponsor",
+      title: FEATURED_SPONSOR.name,
+      subtitle: FEATURED_SPONSOR.tagline,
+      image: FEATURED_SPONSOR.info,
+      cta: FEATURED_SPONSOR.link
+        ? { href: FEATURED_SPONSOR.link, label: "Conocelos", icon: "external", style: "orange" }
+        : null,
+      duration: 6000,
+    }
+  : null;
+
 const NewsModal = () => {
+  const SLIDES = useMemo(
+    () => [buildOpenEventSlide(), SPONSOR_SLIDE, ...BASE_SLIDES].filter(Boolean),
+    []
+  );
   const [showModal, setShowModal] = useState(true);
   const [idx, setIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -218,23 +308,10 @@ const NewsModal = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.4, type: "spring", bounce: 0.45 }}
-                  className="flex justify-center pt-1"
+                  className="flex flex-wrap items-center justify-center gap-3 pt-1"
                 >
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-                    <Link
-                      to={actual.cta.to}
-                      onClick={() => setShowModal(false)}
-                      className={CTA_CLASS}
-                    >
-                      <span className="absolute inset-0 -translate-x-full bg-white/30 transition-transform duration-700 group-hover:translate-x-full" />
-                      {actual.cta.icon === "doc" ? (
-                        <FaFileAlt className="relative z-10" />
-                      ) : (
-                        <FaTrophy className="relative z-10" />
-                      )}
-                      <span className="relative z-10">{actual.cta.label}</span>
-                    </Link>
-                  </motion.div>
+                  {actual.cta && <CtaButton cta={actual.cta} onClose={() => setShowModal(false)} />}
+                  {actual.cta2 && <CtaButton cta={actual.cta2} onClose={() => setShowModal(false)} />}
                 </motion.div>
               </AnimatePresence>
 

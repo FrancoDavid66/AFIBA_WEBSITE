@@ -91,6 +91,11 @@ const AnimatedRoutes = () => {
           path="/navigationButtons"
           element={<PageWrapper component={<NavigationButtons />} />}
         />
+        {/* Información del torneo (flyer, horarios, sede, contactos) */}
+        <Route
+          path="/info-torneo"
+          element={<PageWrapper component={<EventInfo />} />}
+        />
         <Route
           path="/eventInfo"
           element={<PageWrapper component={<EventInfo />} />}

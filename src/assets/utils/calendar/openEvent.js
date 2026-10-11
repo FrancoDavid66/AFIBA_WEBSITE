@@ -18,26 +18,52 @@ const addDays = (d, n) => {
   return x;
 };
 
-// Devuelve el evento con inscripción abierta, o null.
-// Misma lógica del calendario: abre 3 días después del torneo anterior
-// y cierra 1 día antes del evento. Respeta available !== false.
-export const getOpenEvent = (reference = new Date()) => {
-  const all = Object.values(CALENDAR_AFIBA)
+// Todos los torneos ordenados por fecha
+export const getAllEvents = () =>
+  Object.values(CALENDAR_AFIBA)
     .flat()
     .sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate));
 
+// Ventana de inscripción de un torneo:
+// - abre 3 días después del torneo anterior (o desde "openFrom" si el torneo lo tiene)
+// - cierra 1 día antes del evento
+export const getEventWindow = (all, i) => {
+  const t = all[i];
+  const eventDate = startOfDay(`${t.fullDate}T00:00:00`);
+  const closeAt = startOfDay(addDays(eventDate, -1));
+
+  let openAt;
+  if (t.openFrom) openAt = startOfDay(`${t.openFrom}T00:00:00`);
+  else if (i === 0) openAt = new Date(0);
+  else openAt = startOfDay(addDays(startOfDay(`${all[i - 1].fullDate}T00:00:00`), 3));
+
+  return { eventDate, openAt, closeAt };
+};
+
+// Devuelve el evento con inscripción abierta, o null. Respeta available !== false.
+export const getOpenEvent = (reference = new Date()) => {
+  const all = getAllEvents();
+
   for (let i = 0; i < all.length; i++) {
     const t = all[i];
-    const eventDate = startOfDay(`${t.fullDate}T00:00:00`);
-    const closeAt = startOfDay(addDays(eventDate, -1));
-    const openAt = i === 0
-      ? new Date(0)
-      : startOfDay(addDays(startOfDay(`${all[i - 1].fullDate}T00:00:00`), 3));
-
+    const { openAt, closeAt } = getEventWindow(all, i);
     const manuallyAvailable = t.available !== false;
     if (manuallyAvailable && reference >= openAt && reference < closeAt) return t;
   }
   return null;
+};
+
+// Próximo torneo que todavía no se jugó (tenga o no la inscripción abierta), o null.
+export const getNextEvent = (reference = new Date()) => {
+  const all = getAllEvents();
+  return all.find((t) => startOfDay(`${t.fullDate}T00:00:00`) > reference) || null;
+};
+
+// Busca un torneo por su nombre (sin importar mayúsculas)
+export const findEventByName = (name) => {
+  if (!name) return null;
+  const n = String(name).trim().toLowerCase();
+  return getAllEvents().find((t) => t.name.toLowerCase() === n) || null;
 };
 
 export const formatFechaLarga = (iso) => {
