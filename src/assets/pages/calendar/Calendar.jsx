@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { CALENDAR_AFIBA } from '../../data/calendar';
+import { getEventWindow } from '../../utils/calendar/openEvent';
 import {
   FaCalendarAlt,
   FaMapMarkerAlt,
@@ -11,6 +12,7 @@ import {
   FaLock,
   FaCheckCircle,
   FaTrophy,
+  FaInfoCircle,
 } from 'react-icons/fa';
 
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -46,19 +48,8 @@ const Calendar = () => {
 
   const decoratedTournaments = useMemo(() => {
     return allTournaments.map((tournament, index) => {
-      const eventDate = startOfDay(`${tournament.fullDate}T00:00:00`);
-      const closeAt = addDays(eventDate, -1);
-      closeAt.setHours(0, 0, 0, 0);
-
-      let openAt = null;
-      if (index === 0) {
-        openAt = new Date(0);
-      } else {
-        const prev = allTournaments[index - 1];
-        const prevEventDate = startOfDay(`${prev.fullDate}T00:00:00`);
-        openAt = addDays(prevEventDate, 3);
-        openAt.setHours(0, 0, 0, 0);
-      }
+      // Misma regla que openEvent.js (incluye "openFrom" para abrir antes)
+      const { eventDate, openAt, closeAt } = getEventWindow(allTournaments, index);
 
       const isPastEvent = now >= eventDate;
       const isClosedByDeadline = now >= closeAt;
@@ -269,16 +260,28 @@ const Calendar = () => {
               </button>
             )}
 
-            <a
-              href={tournament.link}
-              target="_blank"
-              rel="noreferrer"
-              className={`flex items-center justify-center gap-2 text-[10px] font-black transition-colors py-2 uppercase tracking-[0.3em] ${
-                isActive ? 'text-yellow-500 hover:text-yellow-300' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <FaInstagram /> Ver Detalles
-            </a>
+            {tournament.details ? (
+              <Link
+                to="/info-torneo"
+                state={{ tournament }}
+                className={`flex items-center justify-center gap-2 text-[10px] font-black transition-colors py-2 uppercase tracking-[0.3em] ${
+                  isActive ? 'text-yellow-500 hover:text-yellow-300' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <FaInfoCircle /> Más info del torneo
+              </Link>
+            ) : (
+              <a
+                href={tournament.link}
+                target="_blank"
+                rel="noreferrer"
+                className={`flex items-center justify-center gap-2 text-[10px] font-black transition-colors py-2 uppercase tracking-[0.3em] ${
+                  isActive ? 'text-yellow-500 hover:text-yellow-300' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <FaInstagram /> Ver Detalles
+              </a>
+            )}
           </div>
         </div>
       </motion.div>
@@ -452,4 +455,4 @@ const Calendar = () => {
   );
 };
 
-export default Calendar;
+export default Calendar;

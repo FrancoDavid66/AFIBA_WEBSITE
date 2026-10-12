@@ -1,128 +1,146 @@
-import React, { useState, useEffect } from 'react';
-import styled from '@emotion/styled';
-import { motion } from 'framer-motion';
-import { SPONSORS_VIDEOS } from '../data/sponsors/index.jsx';
+import React, { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { SPONSORS_VIDEOS } from "../data/sponsors/index.jsx";
 
-// Estilización con styled-components
-const Container = styled.div`
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
-const TitleContainer = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 10px;
-`;
-
-const VideoContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-  padding: 20px;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const VideoFrame = styled(motion.div)`
-  flex: 1 1 calc(33.333% - 20px);
-  max-width: 33.333%;
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-in-out;
-
-  @media (max-width: 768px) {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-
-  &:hover {
-    transform: scale(1.05);
-  }
-
-  video,
-  img {
-    width: 100%;
-    height: 100%; // Mantener la altura para que se vea bien
-    object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
-    border-radius: 10px;
-  }
-`;
-
-const SponsorVideos = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+// Video compatible con iOS: los atributos muted/playsinline van literales en el HTML
+// (si no, Safari no hace autoplay) y además se fuerza muted + play() al cargar.
+const AutoVideo = ({ src, poster, className }) => {
+  const ref = useRef(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % SPONSORS_VIDEOS.length);
-    }, 5000); // Cambiar cada 5 segundos
+    const el = ref.current?.querySelector("video");
+    if (!el) return;
+    el.muted = true;
+    const tryPlay = () => {
+      const p = el.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    };
+    el.addEventListener("loadeddata", tryPlay);
+    el.addEventListener("canplay", tryPlay);
+    tryPlay();
+    return () => {
+      el.removeEventListener("loadeddata", tryPlay);
+      el.removeEventListener("canplay", tryPlay);
+    };
+  }, [src]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const posterAttr = poster ? ` poster="${poster}"` : "";
+  return (
+    <div
+      ref={ref}
+      className="absolute inset-0"
+      dangerouslySetInnerHTML={{
+        __html: `<video src="${src}"${posterAttr} class="${className}" muted autoplay loop playsinline webkit-playsinline preload="metadata"></video>`,
+      }}
+    />
+  );
+};
 
-  // Verifica si el dispositivo es móvil o tablet
-  const isMobileOrTablet = window.innerWidth <= 768; // Cambia 768 por el ancho deseado
+// Clases planas (evita ternarios dentro de template literals)
+const FRAME_BASE =
+  "group relative block aspect-video w-full overflow-hidden rounded-2xl bg-black border shadow-[0_10px_30px_rgba(0,0,0,0.35)]";
+const FRAME_IDLE = FRAME_BASE + " border-white/10";
+const FRAME_NEW = FRAME_BASE + " border-orange-500/60 shadow-[0_0_40px_rgba(249,115,22,0.25)]";
+const MEDIA_COVER = "absolute inset-0 h-full w-full object-cover";
+const MEDIA_CONTAIN = "absolute inset-0 h-full w-full object-contain";
+
+const SponsorCard = ({ sponsor, index, isMobile }) => {
+  const frameClass = sponsor.isNew ? FRAME_NEW : FRAME_IDLE;
+  const contain = Boolean(sponsor.vertical);
+  const mediaClass = contain ? MEDIA_CONTAIN : MEDIA_COVER;
+  // En celular se muestran imágenes (los videos horizontales pesan mucho);
+  // los verticales sí van en video porque son livianos y se ven mejor.
+  const showVideo = !isMobile || contain;
+  const backdrop = sponsor.poster || sponsor.img;
+
+  const inner = (
+    <>
+      {/* Fondo desenfocado para los videos verticales */}
+      {contain && backdrop && (
+        <img
+          src={backdrop}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-2xl"
+        />
+      )}
+
+      {showVideo ? (
+        <AutoVideo src={sponsor.videoUrl} poster={sponsor.poster || sponsor.img} className={mediaClass} />
+      ) : (
+        <img src={sponsor.img} alt={sponsor.title} loading="lazy" className={mediaClass} />
+      )}
+
+      {/* Degradado + nombre */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 text-left">
+        <p className="font-primary text-lg font-black uppercase tracking-wide text-white drop-shadow">
+          {sponsor.title}
+        </p>
+        {sponsor.tagline && (
+          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-300/90">
+            {sponsor.tagline}
+          </p>
+        )}
+      </div>
+
+      {sponsor.isNew && (
+        <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_18px_rgba(249,115,22,0.6)]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-black" />
+          Nuevo
+        </span>
+      )}
+    </>
+  );
 
   return (
-    <Container>
-      <TitleContainer
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ delay: index * 0.12, duration: 0.5 }}
+      whileHover={{ y: -6, scale: 1.02 }}
+    >
+      {sponsor.link ? (
+        <a href={sponsor.link} target="_blank" rel="noopener noreferrer" className={frameClass}>
+          {inner}
+        </a>
+      ) : (
+        <div className={frameClass}>{inner}</div>
+      )}
+    </motion.div>
+  );
+};
+
+const SponsorVideos = () => {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return (
+    <section className="mx-auto w-full max-w-6xl px-5 py-10">
+      <motion.div
+        initial={{ opacity: 0, y: -30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
         transition={{ duration: 0.5 }}
+        className="mb-8 flex items-center gap-4 border-b-2 border-[#ddd] pb-3"
       >
-        <motion.h4
-          className='h4'
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          Nuestros valiosos sponsors
-        </motion.h4>
-      </TitleContainer>
-      <VideoContainer>
-        {SPONSORS_VIDEOS.slice(0, 3).map((sponsor, index) => (
-          <VideoFrame
-            key={sponsor.id}
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.2, duration: 0.5 }}
-            whileHover={{ scale: 1.05, transition: { duration: 0.3 } }}
-          >
-            {isMobileOrTablet ? (
-              <a href={sponsor.link} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={sponsor.img} // Asegúrate de que `img` esté en el objeto del patrocinador
-                  alt={sponsor.title}
-                />
-              </a>
-            ) : (
-              <a href={sponsor.link} target="_blank" rel="noopener noreferrer">
-                <video
-                  src={sponsor.videoUrl}
-                  muted
-                  loop
-                  autoPlay
-                  controls={false}
-                  style={{ borderRadius: '10px' }}
-                >
-                  Tu navegador no soporta el elemento de video.
-                </video>
-              </a>
-            )}
-          </VideoFrame>
+        <h4 className="h4">Nuestros valiosos sponsors</h4>
+      </motion.div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {SPONSORS_VIDEOS.map((sponsor, index) => (
+          <SponsorCard key={sponsor.id || sponsor.title} sponsor={sponsor} index={index} isMobile={isMobile} />
         ))}
-      </VideoContainer>
-    </Container>
+      </div>
+    </section>
   );
 };
 
