@@ -6,6 +6,7 @@ import clausura_2026 from '../../imgs/calendar/2026/clausura_2026.jpg';
 // Campos opcionales por torneo:
 // - openFrom: "AAAA-MM-DD" -> abre la inscripción desde esa fecha (pisa la regla de "3 días después del torneo anterior").
 // - details: datos para la página de información del torneo (/info-torneo).
+//   details.fees: tarifas del torneo [{ label, amount }] (amount en pesos, sin puntos).
 
 export const CALENDAR_AFIBA = {
   MARZO: [
@@ -73,6 +74,11 @@ export const CALENDAR_AFIBA = {
         schedule: [
           { label: "Registro de atletas", time: "10:00 a 12:00 hs" },
           { label: "Inicio de la competencia", time: "15:00 hs" },
+        ],
+        fees: [
+          { label: "Inscripción", amount: 60000 },
+          { label: "Categoría adicional", amount: 30000 },
+          { label: "Libreta anual de afiliación", amount: 40000 },
         ],
         contacts: [
           { name: "Gabriel Casado", phone: "+54 9 11 6458-4453", whatsapp: "5491164584453" },
