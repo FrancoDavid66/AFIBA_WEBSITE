@@ -1,4 +1,5 @@
 /// 2026
+import CAMPEONATO_BONAERENSE_2026 from '../../pdf/results/2026/campeonato_bonaerense_2026.pdf'
 import SANSON_CUP_2026 from '../../pdf/results/2026/sanson_cup_2026.pdf'
 import OPEN_IFBB_2026 from '../../pdf/results/2026/open_ifbb_2026.pdf'
 import BUENOS_AIRES_IFBB_2026 from '../../pdf/results/2026/buenos_aires_ifbb_2026.pdf'
@@ -26,6 +27,7 @@ import pdf5_2023 from '../../pdf/results/2023/RESULTADO-SANSON-CUP-2023.pdf'
 
 export const RESULTS = [
   // 2026
+  { title: 'CAMPEONATO BONAERENSE 2026', pdf: CAMPEONATO_BONAERENSE_2026, year: '2026' },
   { title: 'BUENOS AIRES IFBB 2026', pdf: BUENOS_AIRES_IFBB_2026, year: '2026' },
   { title: 'OPEN IFBB 2026', pdf: OPEN_IFBB_2026, year: '2026' },
   { title: 'SANSON CUP 2026', pdf: SANSON_CUP_2026, year: '2026' },
@@ -50,4 +52,4 @@ export const RESULTS = [
   { title: 'COPA INDEPENDENCIA 2023', pdf: pdf3_2023, year: '2023' },
   { title: 'COPA APERTURA 2023', pdf: pdf2_2023, year: '2023' },
   { title: 'SANSON CUP 2023', pdf: pdf5_2023, year: '2023' },
-];
+];
