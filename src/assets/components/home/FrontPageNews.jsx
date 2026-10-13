@@ -17,6 +17,30 @@ const FrontPageNews = () => {
   const news = useMemo(
     () => [
       {
+        id: 8,
+        badge: "Resultados",
+        title: "Resultados Oficiales – Campeonato Bonaerense 2026",
+        description:
+          "Ya están disponibles los resultados oficiales del Campeonato Bonaerense 2026, disputado el 11 de octubre en San Justo, con 31 atletas en tarima. Consultá el listado completo con todas las categorías y posiciones.",
+        meta: [
+          "📅 11 de octubre de 2026",
+          "📍 San Justo – Provincia de Buenos Aires",
+          "🏆 Categorías: Bodybuilding, Classic Bodybuilding, Classic Physique, Men´s Physique, Wellness, Bikini y Body Fitness",
+          "🥇 Overall Bodybuilding: Santiago Nievas",
+          "🥇 Overall Bodybuilding Master: Lucas Caprifoglio",
+          "🥇 Overall Classic Bodybuilding y Classic Physique: Matías Richter",
+          "🥇 Overall Men´s Physique: Alejo Ferretti",
+          "🥇 Overall Wellness: Agustina Monzón",
+          "🥇 Overall Bikini: Luciana Álvarez",
+        ],
+        cta: {
+          to: "/Results",
+          label: "Ver todos los resultados",
+          icon: "trophy",
+        },
+      },
+
+      {
         id: 6,
         badge: "Nueva Categoría",
         title: "FIT & BEAUTY – Nueva categoría oficial",
@@ -41,24 +65,6 @@ const FrontPageNews = () => {
           : null,
       },
 
-      {
-        id: 7,
-        badge: "Resultados",
-        title: "Resultados Oficiales – Buenos Aires IFBB 2026",
-        description:
-          "Ya están disponibles los resultados oficiales del Buenos Aires IFBB 2026, disputado el 23 de agosto en San Justo. La competencia marcó además el debut de la categoría FIT & BEAUTY, con Sabrina Elizabeth Serra como primera campeona provincial y Agustina Díaz en el segundo puesto. Consultá el listado completo con todas las categorías y posiciones.",
-        meta: [
-          "📅 23 de agosto de 2026",
-          "📍 San Justo – Provincia de Buenos Aires",
-          "🏆 Todas las categorías provinciales: Bodybuilding, Classic Physique, Men´s Physique, Bikini, Wellness, Body Fitness, Women´s Physique, Posing Art y Fit & Beauty",
-          "🥇 Debut de FIT & BEAUTY: 1° Sabrina Elizabeth Serra · 2° Agustina Díaz",
-        ],
-        cta: {
-          to: "/Results",
-          label: "Ver todos los resultados",
-          icon: "trophy",
-        },
-      },
     ],
     []
   );

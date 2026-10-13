@@ -76,28 +76,32 @@ const CtaButton = ({ cta, onClose }) => {
 // Slides fijos (los de "inscripciones abiertas" y "nuevo sponsor" se arman solos abajo)
 const BASE_SLIDES = [
   {
+    id: "resultados-bonaerense-2026",
+    category: "Resultados",
+    title: "Campeonato Bonaerense 2026",
+    subtitle: "Resultados oficiales disponibles",
+    design: {
+      eyebrow: "11 de octubre · San Justo",
+      lead: "Campeones overall",
+      champions: [
+        { cat: "Bodybuilding", name: "Santiago Nievas" },
+        { cat: "BB Master", name: "Lucas Caprifoglio" },
+        { cat: "Classic BB + CP", name: "Matías Richter" },
+        { cat: "Men´s Physique", name: "Alejo Ferretti" },
+        { cat: "Wellness", name: "Agustina Monzón" },
+        { cat: "Bikini", name: "Luciana Álvarez" },
+      ],
+    },
+    cta: { to: "/Results", label: "Ver resultados", icon: "trophy" },
+    duration: 9000,
+  },
+  {
     id: "fit-and-beauty",
     category: "Nueva Categoría",
     title: "Fit & Beauty",
     subtitle: "Dos rounds. Dos estilos. Una presencia impecable.",
     image: fabImages[0] || null,
     cta: { to: "/modalidades", label: "Ver reglamento", icon: "doc" },
-    duration: 7000,
-  },
-  {
-    id: "resultados-ba-2026",
-    category: "Resultados",
-    title: "Buenos Aires IFBB 2026",
-    subtitle: "Resultados oficiales disponibles",
-    design: {
-      eyebrow: "23 de agosto · San Justo",
-      lead: "Debut de la categoría Fit & Beauty",
-      podium: [
-        { place: "1°", name: "Sabrina Elizabeth Serra" },
-        { place: "2°", name: "Agustina Díaz" },
-      ],
-    },
-    cta: { to: "/Results", label: "Ver resultados", icon: "trophy" },
     duration: 7000,
   },
 ];
@@ -337,11 +341,31 @@ const NewsModal = () => {
   );
 };
 
-/* Slide sin imagen: diseño con glow dorado y podio */
+/* Slide sin imagen: clases planas según haya grilla de campeones o no */
+const DESIGN_WRAP_BASE =
+  "relative flex h-full w-full flex-col items-center justify-center text-center";
+const DESIGN_WRAP_PAD = " px-8";
+const DESIGN_WRAP_PAD_COMPACT = " px-14 sm:px-20";
+const TROPHY_BASE =
+  "relative z-10 grid place-items-center rounded-full border border-yellow-500/40 bg-yellow-500/10 text-yellow-400";
+const TROPHY_SIZE = " mb-5 h-20 w-20";
+const TROPHY_SIZE_COMPACT = " mb-3 h-14 w-14 [@media(max-height:700px)]:hidden";
+const TROPHY_ICON = "text-3xl drop-shadow-[0_0_12px_rgba(234,179,8,0.6)]";
+const TROPHY_ICON_COMPACT = "text-2xl drop-shadow-[0_0_12px_rgba(234,179,8,0.6)]";
+const LEAD_BASE = "relative z-10 max-w-xs leading-relaxed";
+const LEAD_NORMAL = " mt-3 text-sm text-white/75 sm:text-base";
+const LEAD_COMPACT = " mt-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 sm:text-xs";
+
+/* Slide sin imagen: diseño con glow dorado, podio o grilla de campeones */
 const SlideDesign = ({ data }) => {
   const d = data.design || {};
+  const hasChampions = Array.isArray(d.champions) && d.champions.length > 0;
+  const wrapClass = DESIGN_WRAP_BASE + (hasChampions ? DESIGN_WRAP_PAD_COMPACT : DESIGN_WRAP_PAD);
+  const trophyClass = TROPHY_BASE + (hasChampions ? TROPHY_SIZE_COMPACT : TROPHY_SIZE);
+  const trophyIconClass = hasChampions ? TROPHY_ICON_COMPACT : TROPHY_ICON;
+  const leadClass = LEAD_BASE + (hasChampions ? LEAD_COMPACT : LEAD_NORMAL);
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center px-8 text-center">
+    <div className={wrapClass}>
       {/* Glows */}
       <motion.div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-500/15 blur-[90px]"
@@ -355,11 +379,11 @@ const SlideDesign = ({ data }) => {
       />
 
       <motion.div
-        className="relative z-10 mb-5 grid h-20 w-20 place-items-center rounded-full border border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
+        className={trophyClass}
         animate={{ y: [0, -6, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <FaTrophy className="text-3xl drop-shadow-[0_0_12px_rgba(234,179,8,0.6)]" />
+        <FaTrophy className={trophyIconClass} />
       </motion.div>
 
       {d.eyebrow ? (
@@ -368,10 +392,30 @@ const SlideDesign = ({ data }) => {
         </span>
       ) : null}
 
-      {d.lead ? (
-        <p className="relative z-10 mt-3 max-w-xs text-sm leading-relaxed text-white/75 sm:text-base">
-          {d.lead}
-        </p>
+      {d.lead ? <p className={leadClass}>{d.lead}</p> : null}
+
+      {hasChampions ? (
+        <div className="relative z-10 mt-3 grid w-full grid-cols-2 gap-1.5 sm:mt-4 sm:gap-2">
+          {d.champions.map((c, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.08, duration: 0.4 }}
+              className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1.5 text-left sm:px-3 sm:py-2"
+            >
+              <FaMedal className="hidden shrink-0 text-yellow-500/70 sm:block" />
+              <div className="min-w-0">
+                <span className="block truncate text-[9px] font-bold uppercase tracking-wide text-yellow-500/80 sm:text-[10px] sm:tracking-wider">
+                  {c.cat}
+                </span>
+                <span className="block text-[11px] font-semibold leading-tight text-white/90 sm:truncate sm:text-sm">
+                  {c.name}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       ) : null}
 
       {Array.isArray(d.podium) && d.podium.length ? (

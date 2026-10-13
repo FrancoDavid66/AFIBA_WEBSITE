@@ -50,7 +50,7 @@ export const CALENDAR_AFIBA = {
       date: "11 OCTUBRE",
       fullDate: "2026-10-11",
       name: "CAMPEONATO BONAERENSE",
-      location: "Provincia de Buenos Aires",
+      location: "San Justo - Buenos Aires",
       organizer: "AFIBA - Prom. Pablo Roldan (2281584117)",
       link: "https://www.instagram.com/afibaoficial/",
       image: null, // Flyer no disponible
