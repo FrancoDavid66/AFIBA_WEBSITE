@@ -73,8 +73,11 @@ const CtaButton = ({ cta, onClose }) => {
   );
 };
 
-// Slides fijos (los de "inscripciones abiertas" y "nuevo sponsor" se arman solos abajo)
-const BASE_SLIDES = [
+// Orden del modal: PRIMEROS_SLIDES → inscripciones abiertas → nuevo sponsor → BASE_SLIDES
+// (los de "inscripciones abiertas" y "nuevo sponsor" se arman solos abajo)
+
+// Slides que van primero (novedad principal)
+const PRIMEROS_SLIDES = [
   {
     id: "resultados-bonaerense-2026",
     category: "Resultados",
@@ -95,6 +98,10 @@ const BASE_SLIDES = [
     cta: { to: "/Results", label: "Ver resultados", icon: "trophy" },
     duration: 9000,
   },
+];
+
+// Slides fijos que van al final
+const BASE_SLIDES = [
   {
     id: "fit-and-beauty",
     category: "Nueva Categoría",
@@ -141,7 +148,7 @@ const SPONSOR_SLIDE = FEATURED_SPONSOR
 
 const NewsModal = () => {
   const SLIDES = useMemo(
-    () => [buildOpenEventSlide(), SPONSOR_SLIDE, ...BASE_SLIDES].filter(Boolean),
+    () => [...PRIMEROS_SLIDES, buildOpenEventSlide(), SPONSOR_SLIDE, ...BASE_SLIDES].filter(Boolean),
     []
   );
   const [showModal, setShowModal] = useState(true);
